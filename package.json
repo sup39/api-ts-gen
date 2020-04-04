@@ -1,0 +1,30 @@
+{
+  "name": "api-codegen-ts",
+  "version": "1.0.0",
+  "description": "OpenAPI code generator for TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "lint": "eslint lib bin --ext ts --ext js"
+  },
+  "author": "supmiku39",
+  "license": "MIT",
+  "bin": {
+    "api-codegen": "bin/api-codegen.js"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^3.12.3",
+    "@types/node": "^13.11.0",
+    "@typescript-eslint/eslint-plugin": "^2.26.0",
+    "@typescript-eslint/parser": "^2.26.0",
+    "axios": "^0.19.2",
+    "eslint": "^6.8.0",
+    "eslint-config-google": "^0.14.0",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "js-yaml": "^3.13.1"
+  }
+}
