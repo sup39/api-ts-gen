@@ -1,7 +1,7 @@
 export class FullDate {
-  private date: Date;
+  private _date: Date;
   constructor(...argv: any) {
-    this.date = (()=>{
+    this._date = (()=>{
       if (argv.length==1) {
         const arg = argv[0];
         if (arg instanceof FullDate) return new Date(+arg);
@@ -18,7 +18,7 @@ export class FullDate {
     })();
   }
   toString(): string {
-    const d = this.date;
+    const d = this._date;
     const f = (s: any) => ('0'+s).slice(-2);
     return `${d.getFullYear()}-${f(d.getMonth()+1)}-${f(d.getDate())}`;
   }
@@ -26,16 +26,36 @@ export class FullDate {
     return this.toString();
   }
   valueOf(): number {
-    return new Date(this.date).setHours(0, 0, 0, 0);
+    return new Date(this._date).setHours(0, 0, 0, 0);
   }
-  // prop
-  getFullYear(): number {
-    return this.date.getFullYear();
+  // getter
+  get date(): Date {
+    return new Date(this._date);
   }
-  getMonth(): number {
-    return this.date.getMonth()+1;
+  get year(): number {
+    return this._date.getFullYear();
   }
-  getDate(): number {
-    return this.date.getDate();
+  get month(): number {
+    return this._date.getMonth()+1;
+  }
+  get day(): number {
+    return this._date.getDate();
+  }
+  get dayOfWeek(): number {
+    return this._date.getDay();
+  }
+  // setter
+  set year(val: number) {
+    this._date.setFullYear(val);
+  }
+  set month(val: number) {
+    this._date.setMonth(val-1);
+  }
+  set day(val: number) {
+    this._date.setDate(val);
+  }
+  // func
+  advance(period: number): FullDate {
+    return new FullDate(this._date.valueOf()+period*86400e3);
   }
 }
