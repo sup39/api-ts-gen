@@ -1,10 +1,16 @@
 export declare class FullDate {
-    private date;
+    private _date;
     constructor(...argv: any);
     toString(): string;
     toJSON(): string;
     valueOf(): number;
-    getFullYear(): number;
-    getMonth(): number;
-    getDate(): number;
+    get date(): Date;
+    get year(): number;
+    get month(): number;
+    get day(): number;
+    get dayOfWeek(): number;
+    set year(val: number);
+    set month(val: number);
+    set day(val: number);
+    advance(period: number): FullDate;
 }

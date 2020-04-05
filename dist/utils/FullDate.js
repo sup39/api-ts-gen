@@ -6,7 +6,7 @@ var FullDate = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             argv[_i] = arguments[_i];
         }
-        this.date = (function () {
+        this._date = (function () {
             var _a;
             if (argv.length == 1) {
                 var arg = argv[0];
@@ -28,7 +28,7 @@ var FullDate = /** @class */ (function () {
         })();
     }
     FullDate.prototype.toString = function () {
-        var d = this.date;
+        var d = this._date;
         var f = function (s) { return ('0' + s).slice(-2); };
         return d.getFullYear() + "-" + f(d.getMonth() + 1) + "-" + f(d.getDate());
     };
@@ -36,17 +36,57 @@ var FullDate = /** @class */ (function () {
         return this.toString();
     };
     FullDate.prototype.valueOf = function () {
-        return new Date(this.date).setHours(0, 0, 0, 0);
+        return new Date(this._date).setHours(0, 0, 0, 0);
     };
-    // prop
-    FullDate.prototype.getFullYear = function () {
-        return this.date.getFullYear();
-    };
-    FullDate.prototype.getMonth = function () {
-        return this.date.getMonth() + 1;
-    };
-    FullDate.prototype.getDate = function () {
-        return this.date.getDate();
+    Object.defineProperty(FullDate.prototype, "date", {
+        // getter
+        get: function () {
+            return new Date(this._date);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(FullDate.prototype, "year", {
+        get: function () {
+            return this._date.getFullYear();
+        },
+        // setter
+        set: function (val) {
+            this._date.setFullYear(val);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(FullDate.prototype, "month", {
+        get: function () {
+            return this._date.getMonth() + 1;
+        },
+        set: function (val) {
+            this._date.setMonth(val - 1);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(FullDate.prototype, "day", {
+        get: function () {
+            return this._date.getDate();
+        },
+        set: function (val) {
+            this._date.setDate(val);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(FullDate.prototype, "dayOfWeek", {
+        get: function () {
+            return this._date.getDay();
+        },
+        enumerable: true,
+        configurable: true
+    });
+    // func
+    FullDate.prototype.advance = function (period) {
+        return new FullDate(this._date.valueOf() + period * 86400e3);
     };
     return FullDate;
 }());
