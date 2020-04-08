@@ -70,8 +70,9 @@ var SchemaType = /** @class */ (function () {
     SchemaType.prototype.forProp = function (prop) {
         return "" + prop + (this.required ? '' : '?') + ": " + this.typeName;
     };
-    SchemaType.prototype.stp = function (prop) {
-        var stp = SchemaType.gcStp(prop, this.schema);
+    SchemaType.prototype.stp = function (prop, label, partial) {
+        if (partial === void 0) { partial = false; }
+        var stp = SchemaType.gcStp(prop, this.schema, label, partial);
         return (this.required ? '' : prop + "===undefined ? undefined : ") + stp;
     };
     SchemaType.typeNameOf = function (schema) {
@@ -118,27 +119,30 @@ var SchemaType = /** @class */ (function () {
             sType = "Readonly<" + sType + ">";
         return sType;
     };
-    SchemaType.gcStp = function (para, schema) {
-        var sPara = "'" + para.replace(/'/g, '\\\'') + "'";
+    SchemaType.gcStp = function (para, schema, label, partial) {
+        // partial: Object only, 1 layer only
         // object
         if (isReference(schema)) {
-            return "new " + new SchemaType(schema, true).typeName + "(" + para + ")";
+            var typeName = new SchemaType(schema, true).typeName;
+            return partial ?
+                typeName + ".Partial(" + para + ")" :
+                "new " + typeName + "(" + para + ")";
         }
         // any
-        var code;
         var type = schema.type, nullable = schema.nullable, format = schema.format;
+        var sStp;
         if (type === 'any')
             return para;
         if (isArraySchema(schema)) {
-            code = "STP._Array(" + para + ", " + sPara + ").map(o=>" + SchemaType.gcStp('o', schema.items) + ")";
+            sStp = "(v, l)=>STP._Array(v, l, elm=>" + SchemaType.gcStp('elm', schema.items, label + "[]", false) + ")";
         }
         else if (isObjectSchema(schema)) {
-            code = '{';
+            sStp = '()=>({';
             for (var _i = 0, _a = Object.entries(schema.properties); _i < _a.length; _i++) {
                 var _b = _a[_i], name_2 = _b[0], sub = _b[1];
-                code += name_2 + ": " + SchemaType.gcStp(para + '.' + name_2, sub) + ", ";
+                sStp += name_2 + ": " + SchemaType.gcStp(para + '.' + name_2, sub, label + '.' + name_2, false) + ", ";
             }
-            code += '}';
+            sStp += '})';
         }
         else {
             var t = void 0;
@@ -148,30 +152,37 @@ var SchemaType = /** @class */ (function () {
                 else if (format === 'date')
                     t = 'FullDate';
                 else if (format === 'byte')
-                    t = 'string'; // TODO
+                    t = 'byte';
                 else if (format === 'binary')
-                    t = 'string'; // TODO
+                    t = 'binary';
                 else {
-                    if (format)
-                        warn("Unknown format " + format + ", use string instead");
+                    if (format) {
+                        warn("Unknown string format " + format + ", use string instead");
+                    }
                     t = 'string';
                 }
             }
-            else if (type === 'integer')
-                t = 'number';
+            else if (type === 'integer') {
+                if (format === 'int32')
+                    t = 'int32';
+                else {
+                    warn("Unsupport integer format " + format + ", use number instead");
+                    t = 'number'; // TODO int64
+                }
+            }
             else
                 t = type;
             if (!StrictTypeParser_1.StrictTypeParser.supportTypes.includes(t)) {
-                warn("Unknown type " + type + ", use any instead");
+                warn("Unsupport type " + type + " " + format + ", use any instead");
                 return para;
             }
-            else
-                code = "STP._" + t + "(" + para + ", " + sPara + ")";
+            sStp = "STP._" + t;
         }
         // nullable
-        if (nullable)
-            code = para + "===null ? null : " + code;
-        return code;
+        var funcName = nullable ? 'nullableParse' : 'parse';
+        // result
+        var sLabel = "'" + label.replace(/'/g, '\\\'') + "'"; // escape
+        return "STP." + funcName + "(" + sStp + ", " + para + ", " + sLabel + ")";
     };
     return SchemaType;
 }());

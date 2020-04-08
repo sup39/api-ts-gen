@@ -102,7 +102,7 @@ function codegenIHandler(funcs, config, cp) {
             // TODO void -> string or any
             var isValid = validateStatus(status_2);
             cp.writeln("case " + status_2 + ": return this." + (isValid ? 'onSuccess' : 'onFail') + "(this.handlers[" + status_2 + "],", 1);
-            cp.writeln(schema.stp('data') + ");");
+            cp.writeln(schema.stp('data', 'res.body') + ");");
             cp.tab(-1);
             if (isValid)
                 validTypes.add(schema.typeName);
@@ -164,6 +164,7 @@ function codegenRouter(funcs, config, cp) {
     for (var _i = 0, _a = Object.entries(funcs); _i < _a.length; _i++) {
         var _b = _a[_i], funcName = _b[0], func = _b[1];
         var method = func.method, url = func.url, reqTypes = func.reqTypes, resTypes = func.resTypes;
+        var isPartial = method === 'patch';
         var statuses = Object.keys(resTypes);
         // TODO escape
         var sURL = url.replace(/{(.*?)}/g, ':$1'); // {a} -> :a
@@ -174,7 +175,7 @@ function codegenRouter(funcs, config, cp) {
             mid = "bodyParser(" + config_1 + "), ";
         }
         cp.writeln("router." + method + "('" + sURL + "', " + mid + "async ctx => {", 1);
-        // TODO permission check, etc
+        // req
         if (Object.keys(reqTypes).length === 0) {
             cp.writeln('const req = {};');
         }
@@ -192,16 +193,15 @@ function codegenRouter(funcs, config, cp) {
                 for (var _d = 0, _e = Object.entries(paras); _d < _e.length; _d++) {
                     var _f = _e[_d], name_1 = _f[0], schema = _f[1];
                     var pn = "ctxGetParas." + _in + "(ctx, '" + name_1 + "')";
-                    cp.writeln(name_1 + ": " + schema.stp(pn) + ",");
+                    var label = "req." + _in;
+                    cp.writeln(name_1 + ": " + schema.stp(pn, label) + ",");
                 }
                 cp.writeln('},', -1);
             }
             // body
             var body = reqTypes.body;
             if (body != null) {
-                var name_2 = 'body';
-                var pn = 'reqBody';
-                cp.writeln(name_2 + ": " + body.stp(pn));
+                cp.writeln("body: " + body.stp('reqBody', 'req.body', isPartial));
             }
             cp.writeln('}} catch(err) {', -1);
             cp.tab(1);
@@ -320,13 +320,13 @@ function codegenSchemas(schemas, config, cp) {
     cp.writeln();
     // schema
     for (var _i = 0, _a = Object.entries(schemas); _i < _a.length; _i++) {
-        var _b = _a[_i], name_3 = _b[0], schema = _b[1];
+        var _b = _a[_i], typeName = _b[0], schema = _b[1];
         if (OpenAPI_1.isObjectSchema(schema)) {
-            cp.writeln("export class " + name_3 + " {", 1);
+            cp.writeln("export class " + typeName + " {", 1);
             var propTypes = [];
             for (var _c = 0, _d = Object.entries(schema.properties); _c < _d.length; _c++) {
                 var _e = _d[_c], propName = _e[0], prop = _e[1];
-                var propType = new OpenAPI_1.SchemaType(prop, true); // TODO required?
+                var propType = new OpenAPI_1.SchemaType(prop, true); // TODO required
                 propTypes.push([propName, propType]);
                 cp.writeln(propType.forProp(propName) + ';');
             }
@@ -334,13 +334,24 @@ function codegenSchemas(schemas, config, cp) {
             cp.writeln('constructor(o: {[_: string]: any}){', 1);
             for (var _f = 0, propTypes_1 = propTypes; _f < propTypes_1.length; _f++) {
                 var _g = propTypes_1[_f], n = _g[0], t = _g[1];
-                cp.writeln("this." + n + " = " + t.stp("o." + n) + ";");
+                cp.writeln("this." + n + " = " + t.stp("o." + n, typeName + '.' + n) + ";");
             }
             cp.writeln('}', -1);
+            // Partial
+            cp.writeln("static Partial(o: {[_: string]: any}): Partial<" + typeName + "> {", 1);
+            cp.writeln("const r: Partial<" + typeName + "> = {};");
+            var locPartial = "Partial<" + typeName + ">";
+            for (var _h = 0, propTypes_2 = propTypes; _h < propTypes_2.length; _h++) {
+                var _j = propTypes_2[_h], n = _j[0], t = _j[1];
+                cp.writeln("if (o." + n + " !== undefined) r." + n + " = " + t.stp("o." + n, locPartial + '.' + n) + ";");
+            }
+            cp.writeln('return r;');
+            cp.writeln('}', -1);
+            // end of class
             cp.writeln('}', -1);
         }
         else {
-            cp.writeln("export type " + name_3 + " = " + OpenAPI_1.SchemaType.typeNameOf(schema));
+            cp.writeln("export type " + typeName + " = " + OpenAPI_1.SchemaType.typeNameOf(schema));
         }
     }
     // return

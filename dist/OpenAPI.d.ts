@@ -114,11 +114,11 @@ export declare class SchemaType {
     get required(): boolean;
     get maxSize(): string | number | undefined;
     forProp(prop: string): string;
-    stp(prop: string): string;
+    stp(prop: string, label: string, partial?: boolean): string;
     private schema;
     constructor(schema: Schema | Reference | string, _required: boolean);
     static typeNameOf(schema: Schema | Reference): string;
-    static gcStp(para: string, schema: Schema | Reference): string;
+    static gcStp(para: string, schema: Schema | Reference, label: string, partial: boolean): string;
 }
 export declare type APIFunctions = {
     [_: string]: APIFunction;

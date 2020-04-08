@@ -145,8 +145,8 @@ export class SchemaType {
   forProp(prop: string): string {
     return `${prop}${this.required ? '' : '?'}: ${this.typeName}`;
   }
-  stp(prop: string): string {
-    const stp = SchemaType.gcStp(prop, this.schema);
+  stp(prop: string, label: string, partial: boolean=false): string {
+    const stp = SchemaType.gcStp(prop, this.schema, label, partial);
     return (this.required ? '' : `${prop}===undefined ? undefined : `)+stp;
   }
 
@@ -189,46 +189,61 @@ export class SchemaType {
     if (readOnly) sType = `Readonly<${sType}>`;
     return sType;
   }
-  static gcStp(para: string, schema: Schema | Reference): string {
-    const sPara = `'${para.replace(/'/g, '\\\'')}'`;
+  static gcStp(para: string, schema: Schema | Reference,
+    label: string, partial: boolean): string {
+    // partial: Object only, 1 layer only
     // object
     if (isReference(schema)) {
-      return `new ${new SchemaType(schema, true).typeName}(${para})`;
+      const typeName = new SchemaType(schema, true).typeName;
+      return partial ?
+        `${typeName}.Partial(${para})` :
+        `new ${typeName}(${para})`;
     }
     // any
-    let code;
     const {type, nullable, format} = schema;
+    let sStp;
     if (type === 'any') return para;
     if (isArraySchema(schema)) {
-      code = `STP._Array(${para}, ${sPara}).map(o=>${
-        SchemaType.gcStp('o', schema.items)})`;
+      sStp = `(v, l)=>STP._Array(v, l, elm=>${
+        SchemaType.gcStp('elm', schema.items, `${label}[]`, false)})`;
     } else if (isObjectSchema(schema)) {
-      code = '{';
+      sStp = '()=>({';
       for (const [name, sub] of Object.entries(schema.properties)) {
-        code += `${name}: ${SchemaType.gcStp(para+'.'+name, sub)}, `;
+        sStp += `${name}: ${
+          SchemaType.gcStp(para+'.'+name, sub, label+'.'+name, false)}, `;
       }
-      code += '}';
+      sStp += '})';
     } else {
       let t;
       if (type === 'string') {
         if (format === 'date-time') t = 'Date';
         else if (format === 'date') t = 'FullDate';
-        else if (format === 'byte') t = 'string'; // TODO
-        else if (format === 'binary') t = 'string'; // TODO
+        else if (format === 'byte') t = 'byte';
+        else if (format === 'binary') t = 'binary';
         else {
-          if (format) warn(`Unknown format ${format}, use string instead`);
+          if (format) {
+            warn(`Unknown string format ${format}, use string instead`);
+          }
           t = 'string';
         }
-      } else if (type === 'integer') t = 'number';
-      else t = type;
+      } else if (type === 'integer') {
+        if (format === 'int32') t = 'int32';
+        else {
+          warn(`Unsupport integer format ${format}, use number instead`);
+          t = 'number'; // TODO int64
+        }
+      } else t = type;
       if (!STP.supportTypes.includes(t)) {
-        warn(`Unknown type ${type}, use any instead`);
+        warn(`Unsupport type ${type} ${format}, use any instead`);
         return para;
-      } else code = `STP._${t}(${para}, ${sPara})`;
+      }
+      sStp = `STP._${t}`;
     }
     // nullable
-    if (nullable) code = `${para}===null ? null : ${code}`;
-    return code;
+    const funcName = nullable ? 'nullableParse' : 'parse';
+    // result
+    const sLabel = `'${label.replace(/'/g, '\\\'')}'`; // escape
+    return `STP.${funcName}(${sStp}, ${para}, ${sLabel})`;
   }
 }
 

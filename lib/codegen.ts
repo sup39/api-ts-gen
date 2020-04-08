@@ -101,7 +101,7 @@ function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       cp.writeln(`case ${status}: return this.${
         isValid ? 'onSuccess' : 'onFail'
       }(this.handlers[${status}],`, 1);
-      cp.writeln(`${schema.stp('data')});`);
+      cp.writeln(`${schema.stp('data', 'res.body')});`);
       cp.tab(-1);
       if (isValid) validTypes.add(schema.typeName);
     }
@@ -167,6 +167,7 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
     const {
       method, url, reqTypes, resTypes,
     } = func;
+    const isPartial = method === 'patch';
     const statuses = Object.keys(resTypes);
     // TODO escape
     const sURL = url.replace(/{(.*?)}/g, ':$1'); // {a} -> :a
@@ -177,7 +178,7 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       mid = `bodyParser(${config}), `;
     }
     cp.writeln(`router.${method}('${sURL}', ${mid}async ctx => {`, 1);
-    // TODO permission check, etc
+    // req
     if (Object.keys(reqTypes).length === 0) {
       cp.writeln('const req = {};');
     } else {
@@ -191,16 +192,15 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
         cp.writeln(`${_in}: {`, 1);
         for (const [name, schema] of Object.entries(paras)) {
           const pn = `ctxGetParas.${_in}(ctx, '${name}')`;
-          cp.writeln(`${name}: ${schema.stp(pn)},`);
+          const label = `req.${_in}`;
+          cp.writeln(`${name}: ${schema.stp(pn, label)},`);
         }
         cp.writeln('},', -1);
       }
       // body
       const {body} = reqTypes;
       if (body != null) {
-        const name = 'body';
-        const pn = 'reqBody';
-        cp.writeln(`${name}: ${body.stp(pn)}`);
+        cp.writeln(`body: ${body.stp('reqBody', 'req.body', isPartial)}`);
       }
       cp.writeln('}} catch(err) {', -1); cp.tab(1);
       cp.writeln('if(err instanceof STP.BadValueError)', 1);
@@ -316,24 +316,36 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
     `import {FullDate, StrictTypeParser as STP} from '${utilsTSPath}'`);
   cp.writeln();
   // schema
-  for (const [name, schema] of Object.entries(schemas)) {
+  for (const [typeName, schema] of Object.entries(schemas)) {
     if (isObjectSchema(schema)) {
-      cp.writeln(`export class ${name} {`, 1);
+      cp.writeln(`export class ${typeName} {`, 1);
       const propTypes: [string, SchemaType][] = [];
       for (const [propName, prop] of Object.entries(schema.properties)) {
-        const propType = new SchemaType(prop, true); // TODO required?
+        const propType = new SchemaType(prop, true); // TODO required
         propTypes.push([propName, propType]);
         cp.writeln(propType.forProp(propName)+';');
       }
       // method
       cp.writeln('constructor(o: {[_: string]: any}){', 1);
       for (const [n, t] of propTypes) {
-        cp.writeln(`this.${n} = ${t.stp(`o.${n}`)};`);
+        cp.writeln(`this.${n} = ${t.stp(`o.${n}`, typeName+'.'+n)};`);
       }
       cp.writeln('}', -1);
+      // Partial
+      cp.writeln(
+        `static Partial(o: {[_: string]: any}): Partial<${typeName}> {`, 1);
+      cp.writeln(`const r: Partial<${typeName}> = {};`);
+      const locPartial = `Partial<${typeName}>`;
+      for (const [n, t] of propTypes) {
+        cp.writeln(`if (o.${n} !== undefined) r.${n} = ${
+          t.stp(`o.${n}`, locPartial+'.'+n)};`);
+      }
+      cp.writeln('return r;');
+      cp.writeln('}', -1);
+      // end of class
       cp.writeln('}', -1);
     } else {
-      cp.writeln(`export type ${name} = ${SchemaType.typeNameOf(schema)}`);
+      cp.writeln(`export type ${typeName} = ${SchemaType.typeNameOf(schema)}`);
     }
   }
   // return
