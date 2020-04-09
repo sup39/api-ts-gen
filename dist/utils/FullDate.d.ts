@@ -13,4 +13,5 @@ export declare class FullDate {
     set month(val: number);
     set day(val: number);
     advance(period: number): FullDate;
+    distanceFrom(d0: FullDate): number;
 }
