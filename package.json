@@ -1,5 +1,5 @@
 {
-  "name": "api-codegen-ts",
+  "name": "@supmiku39/openapi-codegen-ts",
   "version": "1.1.1",
   "description": "OpenAPI code generator for TypeScript",
   "main": "dist/index.js",
