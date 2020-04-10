@@ -1,6 +1,6 @@
 {
   "name": "@supmiku39/api-ts-gen",
-  "version": "1.1.2",
+  "version": "1.1.2-a",
   "description": "OpenAPI code generator for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,8 +15,17 @@
     "url": "https://github.com/supmiku39/api-ts-gen",
     "type": "git"
   },
-  "keywords": ["openapi", "swagger", "typescript", "codegen"],
-  "files": ["dist/*", "bin/*", "utils"],
+  "keywords": [
+    "openapi",
+    "swagger",
+    "typescript",
+    "codegen"
+  ],
+  "files": [
+    "dist/*",
+    "bin/*",
+    "utils"
+  ],
   "bin": {
     "api-codegen": "bin/api-codegen.js"
   },
