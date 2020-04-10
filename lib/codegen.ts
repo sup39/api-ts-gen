@@ -265,9 +265,9 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   cp.writeln('set $baseURL(url: string) {', 1);
   cp.writeln('$http.interceptors.request.use(async config => {', 1);
   cp.writeln('config.baseURL = url;');
-  cp.writeln('return config;', -1);
+  cp.writeln('return config;');
   cp.writeln('}, err => Promise.reject(err));', -1);
-  cp.writeln('},');
+  cp.writeln('},', -1);
   // functions
   for (const [funcName, func] of Object.entries(funcs)) {
     const ncHandler = `IHandler.${funcName}`;

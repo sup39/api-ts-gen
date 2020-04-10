@@ -1,7 +1,7 @@
 # OpenAPI codegen for TypeScript
 
 ## What is this?
-It is a TypeScript code generator which generates TypeScript classes and interfaces base on your [OpenAPI document](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md), including
+This is a TypeScript code generator which generates TypeScript classes and interfaces base on your [OpenAPI document](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md), including
 - `schemas`
 - `IHandler`, type-defined interfaces for both server and client api
 - `IServerAPI`, interface for server api
@@ -11,8 +11,8 @@ It is a TypeScript code generator which generates TypeScript classes and interfa
 
 This tool assumes you use **koa router** for server and **axios** for client.
 
-## How to use it?
-### 0. Install this tool
+## How to use this tool?
+### 0. Install it
 ```
 yarn add -D @supmiku39/api-ts-gen
 ```
@@ -25,7 +25,7 @@ yarn add -D @types/koa @types/koa__router axios
 ### 1. Write your OpenAPI document
 You can use [Swagger Editor](https://swagger.io/tools/swagger-editor/) to edit your api document. Make sure to follow the [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md).
 
-This code generator generates code from `paths` and `components/schemas`.  
+This tool generates code from `paths` and `components/schemas`.  
 :warning: only `get`, `post`, `update`, `delete`, `patch` are supported in `paths`
 
 ### 2. Set path alias
@@ -223,16 +223,16 @@ If there is only one `2xx` in the status code and error handling is not required
 ```
 const a: SchemaA = await api.getA(...);
 ```
-However, if you want to handle several kinds of response, you can use `.onXXX(responseBody => handler)` where `XXX` is the status code.
+However, if you want to handle several kinds of response, you can use `.on(statusCode, responseBody => handler)` where `XXX` is the status code.
 ```
 api.getA(...)
-  .on200(a => { // the compiler knows that type of `a` is `SchemaA`
+  .on(200, a => { // the compiler knows that type of `a` is `SchemaA`
     console.log('Get a successfully', a);
   })
-  .on404(msg => {
+  .on(404, msg => {
     console.log('Not found with msg', msg);
   })
-  .on403(() => {
+  .on(403, () => {
     console.log('Forbidden with no msg');
   });
 ```
