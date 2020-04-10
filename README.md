@@ -9,12 +9,12 @@ It is a TypeScript code generator which generates TypeScript classes and interfa
 - `apiRouter`, server api prototype using [koa router](https://github.com/koajs/router)
 - `ClientAPI`, client api implementation using [axios](https://github.com/axios/axios)
 
-This tool assume you use **koa router** for server and **axios** for client.
+This tool assumes you use **koa router** for server and **axios** for client.
 
 ## How to use it?
 ### 0. Install this tool
 ```
-yarn add -D https://github.com/supmiku39/api-codegen-ts
+yarn add -D @supmiku39/api-ts-gen
 ```
 Also, install the dependencies that generated code will use.
 ```
@@ -62,10 +62,10 @@ module.exports = {
 yarn run api-codegen <your-openapi-document> [-o <output-dir>]
 ```
 The default output directory is `api/generated`.  
-For example, if you put your api document at `api.yml`, and want the generated code put in `api-generated/` directory, you can execute
+For example, if you put your api document at `api.yml`, and want the generated code put in `generated/` directory, you can execute
 ```
 # example
-yarn run api-codegen api.yml -o api-generated
+yarn run api-codegen api.yml -o generated
 ```
 ### 4. Implement server api
 ```
@@ -117,14 +117,14 @@ import apiRouter from '#api/apiRouter';
 const app = new Koa();
 // some other entry
 
-app.use(apiRouter.prefix('your/api/prefix').routes());
+app.use(apiRouter.prefix('/your/api/prefix').routes());
 // or simply app.use(apiRouter.routes());
 
 app.listen(yourAppListenPort);
 ```
 
 ### 6. Use api in client
-Simply import and use it!  Like the server api, the function name will be the `operationId` defined in the api document, and the parameters will be the `parameters` and `requestBody` if defined.
+Simply import and use it! Like the server api, the function name will be the `operationId` defined in the api document, and the parameters will be the `parameters` and `requestBody` if defined.
 
 ```
 api.{operationId}([path], [query], [header], [cookie], [body])
@@ -135,7 +135,7 @@ where the `path`, `query`, `header`, `cookie` is a object whose key is the `name
 
 ```
 import api from '#api/ClientAPI';
-// import {FullDate} from 'api-codegen-ts/utils';
+// import {FullDate} from '@supmiku39/api-ts-gen/utils';
 // import {SchemaA} from '#api/schemas';
 
 // ...
@@ -150,23 +150,24 @@ api.operationWithPathAndQueryAndBody({
   queryName2: queryvalue2,
 }, body);
 ```
-If you set the prefix of the api, you have to set the `$baseURL` of api.
+If you set the prefix of the api, you have to set the `$baseURL` of client api.
 ```
-api.$baseURL = 'same/as/the/prefix/in/server';
+api.$baseURL = '/same/as/the/prefix/in/server';
 ```
 
 #### FullDate
 If the format is `string` `date`, you should use `FullDate` instead of `Date`.
 `FullDate` is a wrapper of `Date`, which implements `.toString()`, `.toJSON()` and `.valueOf()` to make it more convenience to convert it to String or JSON.
 
-Import `FullDate` class from `api-codegen-ts/utils`.
+Import `FullDate` class from `@supmiku39/api-ts-gen/utils`.
 ```
-import {FullDate} from 'api-codegen-ts/utils';
+import {FullDate} from '@supmiku39/api-ts-gen/utils';
 
 // initialization
 new FullDate(new Date()); // from a Date instance
 new FullDate(); // today
 new FullDate('2012-03-31'); // 2012-03-31
+new FullDate(2015, 5); // 2015-05-01
 new FullDate(2015, 5, 4); // 2015-05-04
 new FullDate(1449446400000); // 2015-12-07
 
@@ -476,6 +477,9 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 1.1.2
+- publish to npmjs and change the package name in generated code
+- specify constructor argument type of FullDate
 #### 1.1.1
 - implement FullDate#distanceFrom(d0)
 - fix FullDate timezone bug, use UTC instead

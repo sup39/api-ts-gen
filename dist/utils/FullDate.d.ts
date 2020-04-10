@@ -1,6 +1,11 @@
 export declare class FullDate {
     private _date;
-    constructor(...argv: any);
+    constructor();
+    constructor(copyFrom: FullDate);
+    constructor(date: Date);
+    constructor(s: string);
+    constructor(n: number);
+    constructor(y: number, m: number, d?: number);
     toString(): string;
     toJSON(): string;
     valueOf(): number;

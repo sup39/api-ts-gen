@@ -4,7 +4,14 @@ function removeTime(date: Date): Date {
 }
 export class FullDate {
   private _date: Date;
-  constructor(...argv: any) {
+
+  constructor();
+  constructor(copyFrom: FullDate);
+  constructor(date: Date);
+  constructor(s: string);
+  constructor(n: number);
+  constructor(y: number, m: number, d?: number);
+  constructor(...argv: [any?, number?, number?]) {
     this._date = removeTime((() => {
       if (argv.length == 0) return new Date();
       if (argv.length == 1) {

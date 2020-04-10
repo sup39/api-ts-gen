@@ -15,7 +15,7 @@ exports.configDefault = {
     // TS path
     apiDirTSPath: '#api',
     ServerAPITSPath: '#ServerAPI',
-    utilsTSPath: 'api-codegen-ts/utils',
+    utilsTSPath: '@supmiku39/api-ts-gen/utils',
     stateTSPath: null,
     // other
     outputDir: 'api/generated',
