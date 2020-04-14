@@ -477,6 +477,8 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 1.1.3
+- expose fields of schemas to XXX.fields(static variable)
 #### 1.1.2
 - publish to npmjs and change the package name in generated code
 - specify constructor argument type of FullDate

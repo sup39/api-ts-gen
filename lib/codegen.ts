@@ -325,7 +325,7 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
         propTypes.push([propName, propType]);
         cp.writeln(propType.forProp(propName)+';');
       }
-      // method
+      // constructor
       cp.writeln('constructor(o: {[_: string]: any}){', 1);
       for (const [n, t] of propTypes) {
         cp.writeln(`this.${n} = ${t.stp(`o.${n}`, typeName+'.'+n)};`);
@@ -342,6 +342,10 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
       }
       cp.writeln('return r;');
       cp.writeln('}', -1);
+      // fields
+      cp.writeln(`static fields: Array<keyof ${typeName}> = [`, 1);
+      cp.writeln(propTypes.map(e => `'${e[0]}',`).join(' '));
+      cp.writeln(']', -1);
       // end of class
       cp.writeln('}', -1);
     } else {

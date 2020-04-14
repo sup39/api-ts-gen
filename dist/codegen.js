@@ -264,9 +264,9 @@ function codegenClientAPI(funcs, config, cp) {
     cp.writeln('set $baseURL(url: string) {', 1);
     cp.writeln('$http.interceptors.request.use(async config => {', 1);
     cp.writeln('config.baseURL = url;');
-    cp.writeln('return config;', -1);
+    cp.writeln('return config;');
     cp.writeln('}, err => Promise.reject(err));', -1);
-    cp.writeln('},');
+    cp.writeln('},', -1);
     // functions
     for (var _i = 0, _a = Object.entries(funcs); _i < _a.length; _i++) {
         var _b = _a[_i], funcName = _b[0], func = _b[1];
@@ -330,7 +330,7 @@ function codegenSchemas(schemas, config, cp) {
                 propTypes.push([propName, propType]);
                 cp.writeln(propType.forProp(propName) + ';');
             }
-            // method
+            // constructor
             cp.writeln('constructor(o: {[_: string]: any}){', 1);
             for (var _f = 0, propTypes_1 = propTypes; _f < propTypes_1.length; _f++) {
                 var _g = propTypes_1[_f], n = _g[0], t = _g[1];
@@ -347,6 +347,10 @@ function codegenSchemas(schemas, config, cp) {
             }
             cp.writeln('return r;');
             cp.writeln('}', -1);
+            // fields
+            cp.writeln("static fields: Array<keyof " + typeName + "> = [", 1);
+            cp.writeln(propTypes.map(function (e) { return "'" + e[0] + "',"; }).join(' '));
+            cp.writeln(']', -1);
             // end of class
             cp.writeln('}', -1);
         }
