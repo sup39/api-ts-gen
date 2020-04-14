@@ -297,7 +297,7 @@ function codegenSchemas(schemas, config, cp) {
 }
 function codegen(openAPI, configUser) {
     var _a;
-    var config = Object.assign({}, configUser, Config_1.configDefault);
+    var config = Object.assign({}, Config_1.configDefault, configUser);
     // prepare
     fs.mkdirSync(config.outputDir, { recursive: true });
     var apiFuncs = OpenAPI_1.apiFunctionsOf(openAPI);

@@ -287,7 +287,7 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
 }
 
 export default function codegen(openAPI: OpenAPI, configUser: ConfigUser) {
-  const config: Config = Object.assign({}, configUser, configDefault);
+  const config: Config = Object.assign({}, configDefault, configUser);
   // prepare
   fs.mkdirSync(config.outputDir, {recursive: true});
   const apiFuncs = apiFunctionsOf(openAPI);
