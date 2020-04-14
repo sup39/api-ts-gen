@@ -4,16 +4,12 @@ exports.configDefault = {
     // format
     interfacePrefix: 'I',
     indentString: '  ',
-    responsePrefix: '',
     // name
     schemasName: 'schemas',
     IHandlerName: 'IHandler',
-    IServerAPIName: 'IServerAPI',
-    IClientAPIName: 'IClientAPI',
     ClientAPIName: 'ClientAPI',
     routerName: 'apiRouter',
     // TS path
-    apiDirTSPath: '#api',
     ServerAPITSPath: '#ServerAPI',
     utilsTSPath: '@supmiku39/api-ts-gen/utils',
     stateTSPath: null,

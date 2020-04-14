@@ -7,50 +7,34 @@ import {
 } from './OpenAPI';
 import {CodePrinter} from './CodePrinter';
 
-function codegenIServerAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
-  const {apiDirTSPath, IHandlerName} = config;
-  // import
-  cp.writeln(`import * as IHandler from '${apiDirTSPath}/${IHandlerName}'`);
-  // export default
-  cp.writeln('\nexport default interface IAPI {', 1);
-  for (const funcName of Object.keys(funcs)) {
-    cp.writeln(
-      `${funcName}: IHandler.${funcName}.IServerHandler;`,
-    );
-  }
-  cp.writeln('};', -1);
-  return cp.end();
-}
-
 function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   const {
-    apiDirTSPath, schemasName, utilsTSPath,
-    responsePrefix, validateStatus, stateTSPath,
+    schemasName, utilsTSPath, stateTSPath,
   } = config;
   // import
-  cp.writeln(`import * as Schemas from '${apiDirTSPath}/${schemasName}'`);
+  cp.writeln(`import * as Schemas from './${schemasName}'`);
   cp.writeln('import {FullDate, StrictTypeParser as STP, APIPromise} ' +
              `from '${utilsTSPath}'`);
-  cp.writeln('import {RouterContext as Context} from \'@koa/router\'');
+  cp.writeln('import {RouterContext as CTX} from \'@koa/router\'');
   cp.writeln('import {AxiosResponse} from \'axios\'');
   cp.writeln(stateTSPath ?
     `import IState from '${stateTSPath}'` : 'type IState = any');
-  // handler types
+  // api req, res types
+  cp.writeln(`export type TAPI = {`, 1);
   for (const [funcName, func] of Object.entries(funcs)) {
     const {reqTypes, resTypes, method} = func;
-    cp.writeln(`export namespace ${funcName} {`, 1);
+    cp.writeln(`${funcName}: {`, 1);
     // req
-    const sReqTypes: string[] = [];
-    // paras
+    // req.path, ...
+    cp.writeln(`req: {`, 1);
     for (const _in of ELParameterIn) {
       const paras = reqTypes[_in];
       if (paras == null) continue;
-      cp.writeln(`export type T_${_in} = {`, 1);
+      cp.writeln(`${_in}: {`, 1);
       for (const [propName, schemaType] of Object.entries(paras)) {
         cp.writeln(schemaType.forProp(propName)+';');
       }
       cp.writeln('};', -1);
-      sReqTypes.push(`${_in}: T_${_in}`);
     }
     // body
     const {body} = reqTypes;
@@ -58,75 +42,40 @@ function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       // PATCH's req body: Partial
       let {typeName} = body;
       if (method == 'patch') typeName = `Partial<${typeName}>`;
-      cp.writeln(`export type T_body = ${typeName};`);
-      sReqTypes.push(`body${body.required ? '' : '?'}: T_body`);
+      cp.writeln(`body${body.required ? '' : '?'}: ${typeName};`);
     }
-    // IRequest
-    if (sReqTypes.length > 0) {
-      cp.writeln('interface IRequest {', 1);
-      for (const sReqType of sReqTypes) cp.writeln(`${sReqType};`);
-      cp.writeln('}', -1);
-    } else cp.writeln('interface IRequest {}');
+    cp.writeln('}', -1); // req END
     // res
-    cp.writeln('interface IResponses<T> {', 1);
+    cp.writeln(`res: {`, 1);
     for (const [status, schema] of Object.entries(resTypes)) {
-      cp.writeln(`${responsePrefix}${status}: ${
-        `(${schema.forProp('body')}) => T;`
-      }`);
+      cp.writeln(schema.required ?
+        `${schema.forProp(status)};`: `${status}: void;`);
     }
+    cp.writeln('}', -1); // res END
+    // operation END
     cp.writeln('}', -1);
-    cp.writeln('export interface IServerHandler {', 1);
-    cp.writeln('(req: IRequest, res: IResponses<void>, ' +
-                 'state: IState, ctx: Context): void;');
-    cp.writeln('}', -1);
-    // class _ResponsePromise
-    const validTypes = new Set<string>();
-    cp.writeln('export class ResponsePromise<T> extends ' +
-               'APIPromise<T|T_ValidResponse> {', 1);
-    // handler
-    cp.writeln('private handlers: Partial<IResponses<T>> = {};');
-    // on
-    cp.writeln('on<K extends keyof IResponses<T>, U>(', 1);
-    cp.writeln('k: K, h: IResponses<U>[K]): ResponsePromise<T|U>');
-    cp.tab(-1);
-    cp.writeln('{ const e: ResponsePromise<T|U> = this; ' +
-               'e.handlers[k] = h; return e; }');
-    // onResponse
-    cp.writeln('onResponse(res: AxiosResponse<any>){', 1);
-    cp.writeln('const {status, data} = res');
-    cp.writeln('switch(status){', 1);
-    for (const [status, schema] of Object.entries(resTypes)) {
-      // TODO void -> string or any
-      const isValid = validateStatus(status);
-      cp.writeln(`case ${status}: return this.${
-        isValid ? 'onSuccess' : 'onFail'
-      }(this.handlers[${status}],`, 1);
-      cp.writeln(`${schema.stp('data', 'res.body')});`);
-      cp.tab(-1);
-      if (isValid) validTypes.add(schema.typeName);
-    }
-    cp.writeln('}', -1); // end switch
-    cp.writeln('throw new Error(\'Unexpect status code: \'+status);');
-    cp.writeln('}', -1); // end onResponse
-    cp.writeln('}', -1); // end class
-    // valid type
-    const sValidTypes = Array.from(validTypes.values()).join(' | ');
-    cp.writeln(`export type T_ValidResponse = ${sValidTypes};`);
-    // export client handler
-    cp.writeln('export interface IClientHandler {', 1);
-    cp.writeln(`(${sReqTypes.join(', ')}): ResponsePromise<never>;`);
-    cp.writeln('}', -1); // end client handler
-    cp.writeln('}', -1); // end namespace
   }
+  // TAPI END
+  cp.writeln('}', -1);
+  // export IServerAPI
+  cp.writeln('');
+  cp.writeln('type ValueOf<T> = T[keyof T];');
+  cp.writeln('type Dict<T> = {[_: string]: T};');
+  cp.writeln('type RServerAPI<T> = ValueOf<', 1);
+  cp.writeln('{[K in keyof T]: T[K] extends void ? [K, any?] : [K, T[K]]}>;',
+    -1, false);
+  cp.writeln('export type IServerAPI = {[K in keyof TAPI]:', 1);
+  cp.writeln(`(req: TAPI[K]['req'], state: IState, ctx: CTX) =>`, 1);
+  cp.writeln(`Promise<RServerAPI<TAPI[K]['res']>>}`, -2, false);
+  // return
   return cp.end();
 }
 function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   const {
-    apiDirTSPath, schemasName, responsePrefix,
-    ServerAPITSPath, utilsTSPath, stateTSPath,
+    schemasName, ServerAPITSPath, utilsTSPath, stateTSPath,
   } = config;
   // import
-  cp.writeln(`import * as Schemas from '${apiDirTSPath}/${schemasName}'`);
+  cp.writeln(`import * as Schemas from './${schemasName}'`);
   cp.writeln(`import * as Router from '@koa/router'`);
   cp.writeln(
     `import {FullDate, StrictTypeParser as STP} from '${utilsTSPath}'`);
@@ -136,44 +85,25 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   cp.writeln(`type CTX = Router.RouterContext<IState>;`);
   // router
   cp.writeln(`\nconst router = new Router<IState>();`);
-  cp.writeln('');
   // function
-  cp.writeln('function isEmpty(x: any): boolean {', 1);
-  cp.writeln('if(x == null || x === \'\') return true;');
-  cp.writeln('if(typeof x === \'object\') return Object.keys(x).length===0');
-  cp.writeln('return false;');
-  cp.writeln('}', -1);
-  cp.writeln('function nullableParse<T>(v: any, ' +
-               'p: (x: any)=>T): T | undefined {', 1);
-  cp.writeln('return isEmpty(v) ? undefined : p(v);');
-  cp.writeln('}', -1);
-  cp.writeln('const ctxGetParas = {', 1);
-  cp.writeln('path: (ctx: CTX, attr: string) => ctx.params[attr],');
-  cp.writeln('query: (ctx: CTX, attr: string) => ctx.query[attr],');
-  cp.writeln('header: (ctx: CTX, attr: string) => ctx.headers[attr],');
-  cp.writeln('cookie: (ctx: CTX, attr: string) => ctx.cookies.get(attr),');
-  cp.writeln('};', -1);
-  // response generator
-  cp.writeln('function g_res<T>(ctx: CTX, ' +
-             'status: number, dft: string = \'\'){', 1);
-  cp.writeln('return (body: T) => {', 1);
-  cp.writeln('ctx.status = status;');
-  cp.writeln('ctx.body = body ?? dft;');
-  cp.writeln('}', -1);
-  cp.writeln('}', -1);
+  const gcGetParams = {
+    path: (attr: string) => `ctx.params['${attr}']`,
+    query: (attr: string) => `ctx.query['${attr}']`,
+    header: (attr: string) => `ctx.headers['${attr}']`,
+    cookie: (attr: string) => `ctx.cookies.get('${attr}')`,
+  };
   // route
   cp.writeln(`\nimport api from '${ServerAPITSPath}'`);
   for (const [funcName, func] of Object.entries(funcs)) {
     const {
-      method, url, reqTypes, resTypes,
+      method, url, reqTypes,
     } = func;
     const isPartial = method === 'patch';
-    const statuses = Object.keys(resTypes);
     // TODO escape
     const sURL = url.replace(/{(.*?)}/g, ':$1'); // {a} -> :a
     let mid = '';
     if (reqTypes.body) {
-      const {maxSize} = reqTypes.body;
+      const {maxSize} = reqTypes.body; // TODO doc
       const config = maxSize == null ? '' : `{jsonLimit: '${maxSize}'}`;
       mid = `bodyParser(${config}), `;
     }
@@ -183,15 +113,15 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       cp.writeln('const req = {};');
     } else {
       cp.writeln('let req;');
-      cp.writeln('const {body: reqBody} = ctx.request;');
-      cp.writeln('try { req = {', 1);
+      cp.writeln('try {', 1);
+      cp.writeln('req = {', 1);
       // paras
       for (const _in of ELParameterIn) {
         const paras = reqTypes[_in];
         if (paras == null) continue;
         cp.writeln(`${_in}: {`, 1);
         for (const [name, schema] of Object.entries(paras)) {
-          const pn = `ctxGetParas.${_in}(ctx, '${name}')`;
+          const pn = gcGetParams[_in](name);
           const label = `req.${_in}`;
           cp.writeln(`${name}: ${schema.stp(pn, label)},`);
         }
@@ -200,62 +130,48 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       // body
       const {body} = reqTypes;
       if (body != null) {
-        cp.writeln(`body: ${body.stp('reqBody', 'req.body', isPartial)}`);
+        cp.writeln(
+          `body: ${body.stp('ctx.request.body', 'req.body', isPartial)}`);
       }
-      cp.writeln('}} catch(err) {', -1); cp.tab(1);
-      cp.writeln('if(err instanceof STP.BadValueError)', 1);
+      cp.writeln('}', -1);
+      cp.writeln('} catch(err) {', -1); cp.tab(1);
+      cp.writeln('if (err instanceof STP.BadValueError)', 1);
       cp.writeln('return ctx.throw(400, err.toString());'); cp.tab(-1);
       cp.writeln('throw err;');
       cp.writeln('}', -1);
     }
-    // res
-    cp.writeln('const res = {', 1);
-    for (const status of statuses) {
-      cp.writeln(`${responsePrefix}${status}: g_res(ctx, ${status}),`);
-    }
-    cp.writeln('};', -1);
     // call
-    cp.writeln(`await api.${funcName}(req, res, ctx.state, ctx);`);
-    cp.writeln('})', -1);
+    cp.writeln(`const r = await api.${funcName}(req, ctx.state, ctx);`);
+    cp.writeln(`ctx.status = r[0];`);
+    cp.writeln(`ctx.body = r[1] ?? '';`);
+    // ctx END
+    cp.writeln('});', -1);
   }
   cp.writeln('\nexport default router;');
   return cp.end();
 }
 
-function codegenIClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
-  const {apiDirTSPath, IHandlerName} = config;
-  // import
-  cp.writeln(`import * as IHandler from '${apiDirTSPath}/${IHandlerName}'`);
-  // export default
-  cp.writeln('\nexport default interface IAPI {', 1);
-  cp.writeln('$baseURL: string;');
-  for (const funcName of Object.keys(funcs)) {
-    cp.writeln(
-      `${funcName}: IHandler.${funcName}.IClientHandler;`,
-    );
-  }
-  cp.writeln('}', -1);
-  return cp.end();
-}
-
 function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
-  const {
-    apiDirTSPath, IClientAPIName, IHandlerName,
-  } = config;
+  const {IHandlerName, schemasName, utilsTSPath, validateStatus} = config;
   // import
-  cp.writeln(`import * as _IAPI from '${apiDirTSPath}/${IClientAPIName}'`);
-  cp.writeln(`import IAPI from '${apiDirTSPath}/${IClientAPIName}'`);
-  cp.writeln(`import * as IHandler from '${apiDirTSPath}/${IHandlerName}'`);
-  cp.writeln('import axios from \'axios\'');
+  cp.writeln(`import {TAPI} from './${IHandlerName}'`);
+  cp.writeln(`import * as Schemas from './${schemasName}'`);
+  cp.writeln(
+    `import {APIPromise, StrictTypeParser as STP} from '${utilsTSPath}'`);
+  cp.writeln(`import axios from 'axios'`);
+  cp.writeln('');
+  // type
+  cp.writeln(`type TSTP<T> = {[K in keyof T]: (data: any) =>`, 1);
+  cp.writeln(`T[K] extends void ? any : T[K]};`, -1, false);
   // axios
-  cp.writeln('\nconst $http = axios.create({', 1);
+  cp.writeln('const $http = axios.create({', 1);
   cp.writeln('validateStatus: ()=>true,');
   cp.writeln('});', -1);
   // function
   cp.writeln('\nfunction urlReplacer(url: string, ' +
              'rules: {[_: string]: any}): string {', 1);
   cp.writeln('for(const [attr, value] of Object.entries(rules))', 1);
-  cp.writeln('url = url.replace(\'{\'+attr+\'}\', value)');
+  cp.writeln(`url = url.replace('{'+attr+'}', value)`);
   cp.writeln('return url;', -1);
   cp.writeln('};', -1);
   // implementation
@@ -270,13 +186,13 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   cp.writeln('},', -1);
   // functions
   for (const [funcName, func] of Object.entries(funcs)) {
-    const ncHandler = `IHandler.${funcName}`;
-    const {method, url, reqTypes} = func;
+    const gcReq = (_in: string) => `TAPI['${funcName}']['req']['${_in}']`;
+    const {method, url, reqTypes, resTypes} = func;
     const {
       query, header, path, body,
     } = reqTypes; // TODO cookie
     // name
-    cp.writeln(`${funcName}(`, 1);
+    cp.writeln(`${funcName}: (`, 1);
     // paras
     for (const _in of ELParameterIn) {
       const paras = reqTypes[_in];
@@ -287,25 +203,35 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
           _required = true; break;
         }
       }
-      cp.writeln(`${_in}: ${ncHandler}.T_${_in}${_required ? '' : '={}'},`);
+      cp.writeln(`${_in}: ${gcReq(_in)}${_required ? '' : '={}'},`);
     }
     // body
     if (body != null) {
-      cp.writeln(`body${body.required ? '' : '?'}: ${ncHandler}.T_body,`);
+      cp.writeln(`body${body.required ? '' : '?'}: ${gcReq('body')},`);
     }
-    // function body
+    // return value
     cp.tab(-1);
-    cp.writeln(`){return new ${ncHandler}`+
-      '.ResponsePromise<never>($http({', 1);
+    cp.writeln(`) => APIPromise.init($http({`, 1);
+    // req
     cp.writeln(`method: '${method}',`);
     const sURL = `'${url}'`;
     cp.writeln(`url: ${path ? `urlReplacer(${sURL}, path)` : sURL},`);
     if (query) cp.writeln('params: query,');
     if (header) cp.writeln('header: header,');
     if (body != null) cp.writeln('data: body,');
-    cp.writeln('}));},', -1);
+    cp.writeln('}), {', -1); cp.tab(1);
+    // stp
+    for (const [status, schema] of Object.entries(resTypes)) {
+      const label = `ClientAPI[${funcName}][${status}]`;
+      cp.writeln(`${status}: x => ${schema.stp('x', label)},`);
+    }
+    cp.writeln(`} as TSTP<TAPI['${funcName}']['res']>,`);
+    // kRsv
+    cp.writeln(`[${
+      Object.keys(resTypes).filter(validateStatus).join(', ')
+    }]),`, -1);
   }
-  cp.writeln('} as IAPI', -1);
+  cp.writeln('}');
   return cp.end();
 }
 
@@ -314,39 +240,43 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
   // import
   cp.writeln(
     `import {FullDate, StrictTypeParser as STP} from '${utilsTSPath}'`);
-  cp.writeln();
   // schema
   for (const [typeName, schema] of Object.entries(schemas)) {
+    cp.writeln();
     if (isObjectSchema(schema)) {
-      cp.writeln(`export class ${typeName} {`, 1);
+      // interface
+      cp.writeln(`export interface ${typeName} {`, 1);
       const propTypes: [string, SchemaType][] = [];
       for (const [propName, prop] of Object.entries(schema.properties)) {
         const propType = new SchemaType(prop, true); // TODO required
         propTypes.push([propName, propType]);
         cp.writeln(propType.forProp(propName)+';');
       }
-      // constructor
-      cp.writeln('constructor(o: {[_: string]: any}){', 1);
+      cp.writeln('}', -1); // interface END
+      // const
+      cp.writeln(`export const ${typeName} = {`, 1);
+      // .from
+      cp.writeln(`from: (o: {[_: string]: any}): ${typeName} => ({`, 1);
       for (const [n, t] of propTypes) {
-        cp.writeln(`this.${n} = ${t.stp(`o.${n}`, typeName+'.'+n)};`);
+        cp.writeln(`${n}: ${t.stp(`o.${n}`, typeName+'.'+n)},`);
       }
-      cp.writeln('}', -1);
+      cp.writeln('}),', -1);
       // Partial
       cp.writeln(
-        `static Partial(o: {[_: string]: any}): Partial<${typeName}> {`, 1);
+        `Partial: (o: {[_: string]: any}): Partial<${typeName}> => {`, 1);
       cp.writeln(`const r: Partial<${typeName}> = {};`);
       const locPartial = `Partial<${typeName}>`;
       for (const [n, t] of propTypes) {
-        cp.writeln(`if (o.${n} !== undefined) r.${n} = ${
+        cp.writeln(`if (o.${n} !== void 0) r.${n} = ${
           t.stp(`o.${n}`, locPartial+'.'+n)};`);
       }
       cp.writeln('return r;');
-      cp.writeln('}', -1);
+      cp.writeln('},', -1);
       // fields
-      cp.writeln(`static fields: Array<keyof ${typeName}> = [`, 1);
+      cp.writeln(`fields: [`, 1);
       cp.writeln(propTypes.map(e => `'${e[0]}',`).join(' '));
-      cp.writeln(']', -1);
-      // end of class
+      cp.writeln(`] as Array<keyof ${typeName}>`, -1);
+      // end of const
       cp.writeln('}', -1);
     } else {
       cp.writeln(`export type ${typeName} = ${SchemaType.typeNameOf(schema)}`);
@@ -370,10 +300,8 @@ export default function codegen(openAPI: OpenAPI, configUser: ConfigUser) {
   // handler
   ps.push(codegenIHandler(apiFuncs, config, gCP(config.IHandlerName)));
   // server
-  ps.push(codegenIServerAPI(apiFuncs, config, gCP(config.IServerAPIName)));
   ps.push(codegenRouter(apiFuncs, config, gCP(config.routerName)));
   // client
-  ps.push(codegenIClientAPI(apiFuncs, config, gCP(config.IClientAPIName)));
   ps.push(codegenClientAPI(apiFuncs, config, gCP(config.ClientAPIName)));
   // schema
   const schemas = openAPI.components?.schemas;

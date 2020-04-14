@@ -6,16 +6,12 @@ export interface ConfigOptional {
   // format
   interfacePrefix: string;
   indentString: string;
-  responsePrefix: string;
   // name
   schemasName: string;
   IHandlerName: string;
-  IServerAPIName: string;
-  IClientAPIName: string;
   ClientAPIName: string;
   routerName: string;
   // TS path
-  apiDirTSPath: string;
   ServerAPITSPath: string;
   utilsTSPath: string;
   stateTSPath: string | null;
@@ -27,16 +23,12 @@ export const configDefault: ConfigOptional = {
   // format
   interfacePrefix: 'I',
   indentString: '  ',
-  responsePrefix: '',
   // name
   schemasName: 'schemas',
   IHandlerName: 'IHandler',
-  IServerAPIName: 'IServerAPI',
-  IClientAPIName: 'IClientAPI',
   ClientAPIName: 'ClientAPI',
   routerName: 'apiRouter',
   // TS path
-  apiDirTSPath: '#api',
   ServerAPITSPath: '#ServerAPI',
   utilsTSPath: '@supmiku39/api-ts-gen/utils',
   stateTSPath: null,

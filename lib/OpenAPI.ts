@@ -147,7 +147,7 @@ export class SchemaType {
   }
   stp(prop: string, label: string, partial: boolean=false): string {
     const stp = SchemaType.gcStp(prop, this.schema, label, partial);
-    return (this.required ? '' : `${prop}===undefined ? undefined : `)+stp;
+    return (this.required ? '' : `${prop}===void 0 ? void 0 : `)+stp;
   }
 
   private schema: Schema | Reference;
@@ -195,9 +195,7 @@ export class SchemaType {
     // object
     if (isReference(schema)) {
       const typeName = new SchemaType(schema, true).typeName;
-      return partial ?
-        `${typeName}.Partial(${para})` :
-        `new ${typeName}(${para})`;
+      return `${typeName}.${partial ? 'Partial': 'from'}(${para})`;
     }
     // any
     const {type, nullable, format} = schema;

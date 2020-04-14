@@ -73,7 +73,7 @@ var SchemaType = /** @class */ (function () {
     SchemaType.prototype.stp = function (prop, label, partial) {
         if (partial === void 0) { partial = false; }
         var stp = SchemaType.gcStp(prop, this.schema, label, partial);
-        return (this.required ? '' : prop + "===undefined ? undefined : ") + stp;
+        return (this.required ? '' : prop + "===void 0 ? void 0 : ") + stp;
     };
     SchemaType.typeNameOf = function (schema) {
         var _a;
@@ -124,9 +124,7 @@ var SchemaType = /** @class */ (function () {
         // object
         if (isReference(schema)) {
             var typeName = new SchemaType(schema, true).typeName;
-            return partial ?
-                typeName + ".Partial(" + para + ")" :
-                "new " + typeName + "(" + para + ")";
+            return typeName + "." + (partial ? 'Partial' : 'from') + "(" + para + ")";
         }
         // any
         var type = schema.type, nullable = schema.nullable, format = schema.format;

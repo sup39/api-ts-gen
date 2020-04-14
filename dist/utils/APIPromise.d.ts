@@ -1,13 +1,29 @@
 import { AxiosResponse } from 'axios';
-declare type Optional<T> = T | undefined | null;
-declare type TPromiseOn<T, R> = Optional<(_: T) => R | PromiseLike<R>>;
-export declare abstract class APIPromise<T> implements PromiseLike<T> {
-    promise: Promise<T>;
-    constructor(req: Promise<AxiosResponse<any>>);
-    then<T1 = T, T2 = never>(onRsv?: TPromiseOn<T, T1>, onRjt?: TPromiseOn<any, T2>): Promise<T1 | T2>;
-    catch<T2>(onRjt: TPromiseOn<any, T2>): Promise<T | T2>;
-    abstract onResponse(res: AxiosResponse<any>): T;
-    onSuccess<U, V>(f: Optional<(x: U) => V>, v: U): U | V;
-    onFail<U, V>(f: Optional<(x: U) => V>, v: U): V;
+declare type ValueOf<T> = T[keyof T];
+declare type RHandler<T> = ValueOf<{
+    [K in keyof T]: T[K] extends (data: any) => infer U ? U : never;
+}>;
+export declare class BadResponseError extends Error {
+    res: AxiosResponse<any>;
+    constructor(res: AxiosResponse<any>, label: string);
+}
+export declare class APIPromise<TRes, KRsv extends keyof TRes, THdl extends {
+    [K in KRsv]: (data: TRes[K]) => any;
+}, KOn extends keyof TRes = keyof TRes> implements PromiseLike<RHandler<THdl>> {
+    private handlers;
+    private promise;
+    constructor(resPromise: Promise<AxiosResponse>, stps: {
+        [K in keyof TRes]: (data: any) => TRes[K];
+    }, handlers: THdl);
+    static init<TRes, KRsv extends keyof TRes>(res: Promise<AxiosResponse>, stps: {
+        [K in keyof TRes]: (data: any) => TRes[K];
+    }, kRsvs: KRsv[]): APIPromise<TRes, KRsv, {
+        [K in KRsv]: (data: TRes[K]) => TRes[K];
+    }>;
+    on<KK extends KOn, URst>(status: KK, handler: (data: TRes[KK]) => URst): APIPromise<TRes, KRsv | KK, {
+        [K in (KRsv | KK)]: (data: TRes[K]) => K extends KK ? URst : K extends keyof THdl ? ReturnType<THdl[K]> : never;
+    }, Exclude<KOn, KK>>;
+    then<RRsv = never, RRjt = never>(onRsv?: (value: RHandler<THdl>) => RRsv | PromiseLike<RRsv>, onRjt?: (reason: any) => RRjt | PromiseLike<RRjt>): Promise<RRsv | RRjt>;
+    catch<RRjt>(onRjt: (reason: any) => RRjt | PromiseLike<RRjt>): Promise<RRjt>;
 }
 export {};

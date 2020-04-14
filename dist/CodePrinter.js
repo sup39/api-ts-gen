@@ -23,14 +23,15 @@ var CodePrinter = /** @class */ (function () {
         this.indentString = indentString;
         this.cIndent = 0;
     }
-    CodePrinter.prototype.writeln = function (s, dIndent) {
+    CodePrinter.prototype.writeln = function (s, dIndent, pretab) {
         if (s === void 0) { s = ''; }
         if (dIndent === void 0) { dIndent = 0; }
-        if (dIndent < 0)
+        if (pretab === void 0) { pretab = dIndent < 0; }
+        if (pretab)
             this.cIndent = Math.max(0, this.cIndent + dIndent);
         this.write(this.indentString.repeat(this.cIndent) + s + "\n");
-        if (dIndent > 0)
-            this.cIndent += dIndent;
+        if (!pretab)
+            this.cIndent = Math.max(0, this.cIndent + dIndent);
     };
     CodePrinter.prototype.write = function (s) {
         this.writeStream.write(s);

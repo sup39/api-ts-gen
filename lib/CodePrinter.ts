@@ -22,10 +22,10 @@ export class CodePrinter {
     private writeStream: WriteStream = new StringStream(),
     private indentString: string = '  ',
   ) {}
-  writeln(s: string = '', dIndent: number = 0) {
-    if (dIndent < 0) this.cIndent = Math.max(0, this.cIndent + dIndent);
+  writeln(s = '', dIndent = 0, pretab = dIndent<0) {
+    if (pretab) this.cIndent = Math.max(0, this.cIndent + dIndent);
     this.write(`${this.indentString.repeat(this.cIndent) + s}\n`);
-    if (dIndent > 0) this.cIndent += dIndent;
+    if (!pretab) this.cIndent = Math.max(0, this.cIndent + dIndent);
   }
   write(s: string) {
     this.writeStream.write(s);

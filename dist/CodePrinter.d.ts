@@ -15,7 +15,7 @@ export declare class CodePrinter {
     private indentString;
     private cIndent;
     constructor(writeStream?: WriteStream, indentString?: string);
-    writeln(s?: string, dIndent?: number): void;
+    writeln(s?: string, dIndent?: number, pretab?: boolean): void;
     write(s: string): void;
     tab(x: number): void;
     end(): Promise<void>;

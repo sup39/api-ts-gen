@@ -1,12 +1,10 @@
 # OpenAPI codegen for TypeScript
 
 ## What is this?
-This is a TypeScript code generator which generates TypeScript classes and interfaces base on your [OpenAPI document](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md), including
+This is a TypeScript code generator which generates TypeScript types and interfaces base on your [OpenAPI document](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md), including
 - `schemas`
-- `IHandler`, type-defined interfaces for both server and client api
-- `IServerAPI`, interface for server api
-- `IClientAPI`, interface for client api
-- `apiRouter`, server api prototype using [koa router](https://github.com/koajs/router)
+- `IHandler`, types and interfaces for both server and client api
+- `apiRouter`, server api partial implementation using [koa router](https://github.com/koajs/router)
 - `ClientAPI`, client api implementation using [axios](https://github.com/axios/axios)
 
 This tool assumes you use **koa router** for server and **axios** for client.
@@ -59,7 +57,7 @@ module.exports = {
 ```
 ### 3. Run this tool
 ```
-yarn run api-codegen <your-openapi-document> [-o <output-dir>]
+yarn run api-codegen <your-openapi-document> [-o <output-dir>] [-s <ctx.state-interface-path>]
 ```
 The default output directory is `api/generated`.  
 For example, if you put your api document at `api.yml`, and want the generated code put in `generated/` directory, you can execute
@@ -69,34 +67,21 @@ yarn run api-codegen api.yml -o generated
 ```
 ### 4. Implement server api
 ```
-import IAPI from '#api/IServerAPI';
+import {IServerAPI} from '#api/IServerAPI';
 
 export default {
-  operationId: async (req, res, state, ctx) => {
+  operationId: async (req, state, ctx) => {
     // ...
   },
   // ...
-} as IAPI;
+} as IServerAPI;
 ```
 The function name is the `operationId` defined in the api document.  
-There are 4 arguments passed to the function.
+There are 3 arguments passed to the function.
 #### req
 The request parameters and body, defined in `parameters` and `requestBody`.  
 Any parameter will be put in `req.{in}.{name}`, where `{in}` is one of `path`, `query`, `header`, `cookie`.  
 `requestBody` will be put in `req.body`.
-#### res
-The response object.
-```
-// call this in the server api implementation to response
-res[statusCode](responseBody);
-```
-If the responseBody is not required, you can omit it or pass anything to it.
-```
-// if responseBody is not required
-res[statusCode](); // OK
-res[statusCode]('message string'); // OK
-res[statusCode]({some: 'object'}); // OK
-```
 #### state
 Alias to `ctx.state`
 #### ctx
@@ -107,6 +92,19 @@ ctx.body = responseBody;
 ctx.status = statusCode;
 // Do this
 res[statusCode](responseBody);
+```
+#### return value
+`[status, body]`
+If the responseBody is not required, you can omit it or pass anything to it.
+```
+// example
+return [200, {...}];
+return [404, 'some response string'];
+
+// if responseBody is not required
+return [statusCode]; // OK
+return [statusCode, 'message string']; // OK
+return [statusCode, {some: 'object'}]; // OK
 ```
 
 ### 5. Mount the api router to server
@@ -203,17 +201,19 @@ d0.distanceFrom(new FullDate(2007, 8, 31)); // 2803
 :warning: `FullDate` use `month` from 1 to 12, which differs from `Date`. Also, `FullDate` use `day` and `dayOfWeek` instead of `date` and `day`.
 
 #### Schema
-It is not necessary to use `new SomeSchema(...)` of `SomeSchema.Partial(...)` to create an instance to pass to the client api. Instead, simply use an object literal.
+It is not necessary to use `SomeSchema.from(...)` of `SomeSchema.Partial(...)` to create an instance to pass to the client api. Instead, simply use an object literal.
 
-Import the schema classes from `#api/schemas`.
+Import the schema type interfaces from `#api/schemas`.
 ```
 import {SchemaA, SchemaB} from '#api/schemas';
 
 api.postA({id: 3}, {...}) // OK, simpler
-api.postA({id: 3}, new SchemaA(...)); // Well, still OK
+api.postA({id: 3}, SchemaA.from(...)); // Well, still OK
 api.patchB({id: 3}, {...}) // OK, simpler
 api.patchB({id: 3}, SchemaB.Partial(...)); // Well, still OK
 ```
+
+:warning: From v2.0.0, `Schemas` are no longer class. Instead, it became a `interface` and a Object including `from`, `Partial`, and `fields` properties.
 
 #### Handling response
 The api is a async function that returns a `APIPromise`, which is a extended Promise. The promise is resolved if the status code is `2xx`, otherwise it is rejected.
@@ -235,6 +235,19 @@ api.getA(...)
   .on(403, () => {
     console.log('Forbidden with no msg');
   });
+```
+
+:warning: For any status, you can only call `.on(status, ...)` once.
+```
+// OK
+api.getA(...)
+  .on(200, a => ...)
+  .on(403, () => ...)
+
+// NG
+api.getA(...)
+  .on(200, a => ...)
+  .on(200, () => ...) // Compile Error!
 ```
 
 ## Details
@@ -324,8 +337,8 @@ new Blob([]) // NG, Blob is not supported
 ```
 
 ### Schema
-Base on `#/components/schemas`, it generates class definitions and constructors in `schemas.ts`.
-#### Class Definition
+Base on `#/components/schemas`, it generates interface definitions and constructor functions in `schemas.ts`.
+#### Interface Definition
 For example,
 ```
 Post:
@@ -353,7 +366,7 @@ Post:
 ```
 will become
 ```
-class Post {
+interface Post {
   id: number;
   ts: string;
   authorID: number;
@@ -362,9 +375,9 @@ class Post {
   pinned: boolean;
 }
 ```
-#### Constructor
-It also generates constructors with **strict type checking**.
-The constructor takes exactly one argument with literal object type.
+#### Constructor Function
+It also generates constructor function `Schema.from` with **strict type checking**.
+The constructor function takes exactly one argument with literal object type.
 If any property of the argument is not convertible to expected type, it throws an `BadValueError`.
 
 For example,
@@ -383,7 +396,7 @@ NamedCircle:
 ```
 will become
 ```
-class NamedCircle {
+interface NamedCircle {
   name: string;
   radius: number;
   color: string | null;
@@ -391,37 +404,37 @@ class NamedCircle {
 ```
 Here are some examples for strict type checking:
 ```
-new NamedCircle({
+NamedCircle.from({
   name: 'red circle',
   radius: 39,
   color: 'red',
 }); // OK
 
-new NamedCircle({
+NamedCircle.from({
   name: 'circle with null color',
   radius: 0,
   color: null,
 }); // OK, color is nullable
 
-new NamedCircle({
+NamedCircle.from({
   name: 'circle with null color',
   radius: 0,
   color: undefined,
 }); // Error! color should be a number or null
 
-new NamedCircle({
+NamedCircle.from({
   name: 'circle without given color',
   radius: 0,
 }); // Error! color should be given
 
-new NamedCircle({
+NamedCircle.from({
   name: 'circle with invalid radius',
   radius: 'miku',
   color: 'cyan',
 }); // Error! radius should be a number
 ```
 #### Partial Function
-It also generates a static function called `Partial` for initializing Partial type.
+It also generates a function called `Partial` for initializing Partial type.
 The function also takes exactly one argument.
 If any property of the argument is absent or is undefined, the function will skip setting the property.
 However, if the property is given but not convertible to expected type, it throws a `BadValueError`.
@@ -467,7 +480,14 @@ NamedCircle.Partial({
 }); // Error! radius should be a number
 ```
 
-:warning: Use **object literal** if possible. The constructor and Partial function are mainly for internal use, avoid to use them unless you want to safe and strict convert a any variable to a schema type.
+:warning: Use **object literal** if possible. The `from` and `Partial` function are mainly for internal use, avoid to use them unless you want to safe and strict convert a any variable to a schema type.
+
+### fields
+`Schema` exposes its fields to `fields` constant.
+Its type is `Array<keyof Schema>`.
+```
+NamedCircle.fields // ['name', 'radius', 'color']: Array<keyof NamedCircle>
+```
 
 ## Limitations
 ### application/json only
@@ -477,6 +497,13 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 2.0.0
+- simplify generated code
+  - merge all APIPromise class
+  - remove IServerAPI and IClientAPI
+- remove res Object, return [status, body] in ServerAPI instead
+- remove schema classes, use interface instead
+- `-s` flag for `ctx.state` interface path
 #### 1.1.3
 - expose fields of schemas to XXX.fields(static variable)
 #### 1.1.2

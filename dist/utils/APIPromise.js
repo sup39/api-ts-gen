@@ -13,48 +13,59 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+function typeGuard(checker) {
+    return function (x) {
+        return checker(x);
+    };
+}
 var BadResponseError = /** @class */ (function (_super) {
     __extends(BadResponseError, _super);
-    function BadResponseError(err, res) {
-        var _this = _super.call(this, err.toString()) || this;
-        _this.err = err;
+    function BadResponseError(res, label) {
+        var _this = _super.call(this, label + " status code: " + res.status + "\ndata: " + (typeof res.data === 'object' ? JSON.stringify(res.data) : res.data)) || this;
         _this.res = res;
         Object.setPrototypeOf(_this, BadResponseError.prototype);
         return _this;
     }
     return BadResponseError;
 }(Error));
+exports.BadResponseError = BadResponseError;
 var APIPromise = /** @class */ (function () {
-    function APIPromise(req) {
+    function APIPromise(resPromise, stps, handlers) {
         var _this = this;
-        this.promise = new Promise(function (rsv, rjt) {
-            req.then(function (res) {
-                try {
-                    rsv(_this.onResponse(res));
-                }
-                catch (err) {
-                    rjt(new BadResponseError(err, res));
-                }
-            }).catch(function (err) { return rjt(err); });
+        this.handlers = handlers;
+        this.promise = resPromise.then(function (res) {
+            var status = res.status, data = res.data;
+            if (!typeGuard(function (x) { return stps.hasOwnProperty(x); })(status)) {
+                // unexpected status
+                throw new BadResponseError(res, 'Unexpected');
+            }
+            var r = stps[status](data);
+            if (!typeGuard(function (x) { return _this.handlers.hasOwnProperty(x); })(status)) {
+                // unhandled status
+                throw new BadResponseError(res, 'Unhandled');
+            }
+            var handler = _this.handlers[status];
+            return handler(r);
         });
     }
+    APIPromise.init = function (res, stps, kRsvs) {
+        var handlers = {};
+        for (var _i = 0, kRsvs_1 = kRsvs; _i < kRsvs_1.length; _i++) {
+            var kRsv = kRsvs_1[_i];
+            handlers[kRsv] = function (x) { return x; };
+        }
+        return new APIPromise(res, stps, handlers);
+    };
+    APIPromise.prototype.on = function (status, handler) {
+        var self = this;
+        self.handlers[status] = handler;
+        return self;
+    };
     APIPromise.prototype.then = function (onRsv, onRjt) {
         return this.promise.then(onRsv, onRjt);
     };
     APIPromise.prototype.catch = function (onRjt) {
         return this.then(undefined, onRjt);
-    };
-    APIPromise.prototype.onSuccess = function (f, v) {
-        if (f)
-            return f(v);
-        else
-            return v;
-    };
-    APIPromise.prototype.onFail = function (f, v) {
-        if (f)
-            return f(v);
-        else
-            throw new Error();
     };
     return APIPromise;
 }());

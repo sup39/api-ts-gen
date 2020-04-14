@@ -9,6 +9,7 @@ const badArgv = (x, code=1) => {
     'Usage: api-codegen <apiDocPath> [flags]',
     'Flags:',
     '  -o --outputDir: outputDir',
+    '  -s --stateTSPath: ctx.state type definition file path',
   ].join('\n'));
   process.exit(code);
 };
@@ -22,6 +23,8 @@ const argAttrs = ['apiDocPath'];
 const flag2attr = {
   o: 'outputDir',
   outputDir: 'outputDir',
+  s: 'stateTSPath',
+  stateTSPath: 'stateTSPath',
 };
 const requiredAttrs = [
   ...argAttrs,
