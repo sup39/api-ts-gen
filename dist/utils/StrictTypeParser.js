@@ -74,6 +74,8 @@ var StrictTypeParser;
     function _boolean(x, label) {
         if (typeof x === 'boolean')
             return x;
+        if (typeof x === 'number')
+            return x != 0;
         if (x === 'true')
             return true;
         if (x === 'false')

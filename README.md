@@ -292,7 +292,7 @@ To ensure type safety, `STP` provides some static functions to convert `any` typ
 |`integer`|`int64`|`number`, `string`|no check for range and floating point|
 |`number`||`number`, `string`|`NaN` and `Infinity` is valid|
 |`string`||`string`||
-|`boolean`||`boolean`, `string`||
+|`boolean`||`boolean`, `number`, `string`||
 |`string`|`date`|`FullDate`, `Date`, `number`, `string`||
 |`string`|`date-time`|`Date`, `number`, `string`||
 |`string`|`byte`|`string`, `Buffer`|no validation check|
@@ -325,8 +325,9 @@ Infinity // OK, although it is convertible to int64
 // boolean
 true, false // OK
 'true', 'false' // OK
+0, 1, -1, 3.14, Infinity, NaN // OK (Only 0 is converted to false)
 'T', 'F' // NG, only 'true' and 'false' are valid
-0, 1 // NG, same reason
+null, {} // NG
 
 // FullDate
 new FullDate() // OK
@@ -518,6 +519,8 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 2.0.2
+- make number convertible to boolean
 #### 2.0.1
 - use IState as a generic type and remove it from api-codegen.
 #### 2.0.0

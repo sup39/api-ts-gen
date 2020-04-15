@@ -40,6 +40,7 @@ export module StrictTypeParser {
   }
   export function _boolean(x: any, label: string): boolean {
     if (typeof x === 'boolean') return x;
+    if (typeof x === 'number') return x!=0;
     if (x==='true') return true;
     if (x==='false') return false;
     throw new BadTypeError(label, 'boolean', x);
