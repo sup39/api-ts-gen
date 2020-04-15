@@ -12,7 +12,6 @@ exports.configDefault = {
     // TS path
     ServerAPITSPath: '#ServerAPI',
     utilsTSPath: '@supmiku39/api-ts-gen/utils',
-    stateTSPath: null,
     // other
     outputDir: 'api/generated',
     validateStatus: function (status) { return /^2..$/.test(status); },

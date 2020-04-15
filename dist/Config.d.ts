@@ -11,7 +11,6 @@ export interface ConfigOptional {
     routerName: string;
     ServerAPITSPath: string;
     utilsTSPath: string;
-    stateTSPath: string | null;
     outputDir: string;
     validateStatus: (status: string) => boolean;
 }

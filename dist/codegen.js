@@ -6,15 +6,13 @@ var Config_1 = require("./Config");
 var OpenAPI_1 = require("./OpenAPI");
 var CodePrinter_1 = require("./CodePrinter");
 function codegenIHandler(funcs, config, cp) {
-    var schemasName = config.schemasName, utilsTSPath = config.utilsTSPath, stateTSPath = config.stateTSPath;
+    var schemasName = config.schemasName, utilsTSPath = config.utilsTSPath;
     // import
     cp.writeln("import * as Schemas from './" + schemasName + "'");
     cp.writeln('import {FullDate, StrictTypeParser as STP, APIPromise} ' +
         ("from '" + utilsTSPath + "'"));
     cp.writeln('import {RouterContext as CTX} from \'@koa/router\'');
     cp.writeln('import {AxiosResponse} from \'axios\'');
-    cp.writeln(stateTSPath ?
-        "import IState from '" + stateTSPath + "'" : 'type IState = any');
     // api req, res types
     cp.writeln("export type TAPI = {", 1);
     for (var _i = 0, _a = Object.entries(funcs); _i < _a.length; _i++) {
@@ -62,26 +60,27 @@ function codegenIHandler(funcs, config, cp) {
     // export IServerAPI
     cp.writeln('');
     cp.writeln('type ValueOf<T> = T[keyof T];');
-    cp.writeln('type Dict<T> = {[_: string]: T};');
     cp.writeln('type RServerAPI<T> = ValueOf<', 1);
     cp.writeln('{[K in keyof T]: T[K] extends void ? [K, any?] : [K, T[K]]}>;', -1, false);
-    cp.writeln('export type IServerAPI = {[K in keyof TAPI]:', 1);
+    cp.writeln('export type IServerAPI<IState=any> = {[K in keyof TAPI]:', 1);
     cp.writeln("(req: TAPI[K]['req'], state: IState, ctx: CTX) =>", 1);
     cp.writeln("Promise<RServerAPI<TAPI[K]['res']>>}", -2, false);
     // return
     return cp.end();
 }
 function codegenRouter(funcs, config, cp) {
-    var schemasName = config.schemasName, ServerAPITSPath = config.ServerAPITSPath, utilsTSPath = config.utilsTSPath, stateTSPath = config.stateTSPath;
+    var schemasName = config.schemasName, IHandlerName = config.IHandlerName, ServerAPITSPath = config.ServerAPITSPath, utilsTSPath = config.utilsTSPath;
     // import
     cp.writeln("import * as Schemas from './" + schemasName + "'");
+    cp.writeln("import {IServerAPI} from './" + IHandlerName + "'");
     cp.writeln("import * as Router from '@koa/router'");
     cp.writeln("import {FullDate, StrictTypeParser as STP} from '" + utilsTSPath + "'");
     cp.writeln("import * as bodyParser from 'koa-body'");
-    cp.writeln(stateTSPath ?
-        "import IState from '" + stateTSPath + "'" : 'type IState = any');
-    cp.writeln("type CTX = Router.RouterContext<IState>;");
+    // api
+    cp.writeln("\nimport api from '" + ServerAPITSPath + "'");
+    cp.writeln("type IState = typeof api extends IServerAPI<infer T> ? T : any;");
     // router
+    cp.writeln("type CTX = Router.RouterContext<IState>;");
     cp.writeln("\nconst router = new Router<IState>();");
     // function
     var gcGetParams = {
@@ -91,7 +90,6 @@ function codegenRouter(funcs, config, cp) {
         cookie: function (attr) { return "ctx.cookies.get('" + attr + "')"; },
     };
     // route
-    cp.writeln("\nimport api from '" + ServerAPITSPath + "'");
     for (var _i = 0, _a = Object.entries(funcs); _i < _a.length; _i++) {
         var _b = _a[_i], funcName = _b[0], func = _b[1];
         var method = func.method, url = func.url, reqTypes = func.reqTypes;

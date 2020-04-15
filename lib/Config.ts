@@ -14,7 +14,6 @@ export interface ConfigOptional {
   // TS path
   ServerAPITSPath: string;
   utilsTSPath: string;
-  stateTSPath: string | null;
   // other
   outputDir: string;
   validateStatus: (status: string) => boolean;
@@ -31,7 +30,6 @@ export const configDefault: ConfigOptional = {
   // TS path
   ServerAPITSPath: '#ServerAPI',
   utilsTSPath: '@supmiku39/api-ts-gen/utils',
-  stateTSPath: null,
   // other
   outputDir: 'api/generated',
   validateStatus: (status: string) => /^2..$/.test(status),

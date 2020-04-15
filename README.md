@@ -72,6 +72,7 @@ import {IServerAPI} from '#api/IServerAPI';
 export default {
   operationId: async (req, state, ctx) => {
     // ...
+    return [status, body];
   },
   // ...
 } as IServerAPI;
@@ -84,14 +85,34 @@ Any parameter will be put in `req.{in}.{name}`, where `{in}` is one of `path`, `
 `requestBody` will be put in `req.body`.
 #### state
 Alias to `ctx.state`
+
+You can specify the type of `ctx.state` by setting the export default type to `IServerAPI<YourStateType>`.
+```
+// example
+import {IServerAPI} from '#api/IHandler';
+
+interface IState {
+  user: {
+    id: number;
+  }
+}
+export default {
+  // ...
+  operationId: async (req, state, ctx) => {
+    // state has IState type here
+    state.user.id // number
+    // ...
+  },
+} as IServerAPI<IState> // specify ctx.state type to IState
+```
 #### ctx
 The `ctx` object from koa router. **Avoid to use it** unless required.  
 ```
-// Don't do this unless required
+// Don't do this
 ctx.body = responseBody;
 ctx.status = statusCode;
 // Do this
-res[statusCode](responseBody);
+return [statusCode, responseBody];
 ```
 #### return value
 `[status, body]`
@@ -497,6 +518,8 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 2.0.1
+- use IState as a generic type and remove it from api-codegen.
 #### 2.0.0
 - simplify generated code
   - merge all APIPromise class
