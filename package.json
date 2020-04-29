@@ -1,6 +1,6 @@
 {
-  "name": "@supmiku39/api-ts-gen",
-  "version": "2.0.2",
+  "name": "@sup39/api-ts-gen",
+  "version": "2.0.2-a",
   "description": "OpenAPI code generator for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,10 +9,10 @@
     "build": "tsc",
     "lint": "eslint lib bin --ext ts --ext js"
   },
-  "author": "supmiku39",
+  "author": "sup39",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/supmiku39/api-ts-gen",
+    "url": "https://github.com/sup39/api-ts-gen",
     "type": "git"
   },
   "keywords": [

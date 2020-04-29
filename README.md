@@ -12,7 +12,7 @@ This tool assumes you use **koa router** for server and **axios** for client.
 ## How to use this tool?
 ### 0. Install it
 ```
-yarn add -D @supmiku39/api-ts-gen
+yarn add -D @sup39/api-ts-gen
 ```
 Also, install the dependencies that generated code will use.
 ```
@@ -154,7 +154,7 @@ where the `path`, `query`, `header`, `cookie` is a object whose key is the `name
 
 ```
 import api from '#api/ClientAPI';
-// import {FullDate} from '@supmiku39/api-ts-gen/utils';
+// import {FullDate} from '@sup39/api-ts-gen/utils';
 // import {SchemaA} from '#api/schemas';
 
 // ...
@@ -178,9 +178,9 @@ api.$baseURL = '/same/as/the/prefix/in/server';
 If the format is `string` `date`, you should use `FullDate` instead of `Date`.
 `FullDate` is a wrapper of `Date`, which implements `.toString()`, `.toJSON()` and `.valueOf()` to make it more convenience to convert it to String or JSON.
 
-Import `FullDate` class from `@supmiku39/api-ts-gen/utils`.
+Import `FullDate` class from `@sup39/api-ts-gen/utils`.
 ```
-import {FullDate} from '@supmiku39/api-ts-gen/utils';
+import {FullDate} from '@sup39/api-ts-gen/utils';
 
 // initialization
 new FullDate(new Date()); // from a Date instance
