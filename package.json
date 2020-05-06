@@ -1,6 +1,6 @@
 {
   "name": "@sup39/api-ts-gen",
-  "version": "2.0.2-a",
+  "version": "2.0.2-b",
   "description": "OpenAPI code generator for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

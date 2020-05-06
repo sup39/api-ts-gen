@@ -11,7 +11,7 @@ exports.configDefault = {
     routerName: 'apiRouter',
     // TS path
     ServerAPITSPath: '#ServerAPI',
-    utilsTSPath: '@supmiku39/api-ts-gen/utils',
+    utilsTSPath: '@sup39/api-ts-gen/utils',
     // other
     outputDir: 'api/generated',
     validateStatus: function (status) { return /^2..$/.test(status); },

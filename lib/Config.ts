@@ -29,7 +29,7 @@ export const configDefault: ConfigOptional = {
   routerName: 'apiRouter',
   // TS path
   ServerAPITSPath: '#ServerAPI',
-  utilsTSPath: '@supmiku39/api-ts-gen/utils',
+  utilsTSPath: '@sup39/api-ts-gen/utils',
   // other
   outputDir: 'api/generated',
   validateStatus: (status: string) => /^2..$/.test(status),
