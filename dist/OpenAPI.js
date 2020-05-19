@@ -164,7 +164,9 @@ var SchemaType = /** @class */ (function () {
                 if (format === 'int32')
                     t = 'int32';
                 else {
-                    warn("Unsupport integer format " + format + ", use number instead");
+                    if (format && format != 'int64') {
+                        warn("Unsupport integer format " + format + ", use number instead");
+                    }
                     t = 'number'; // TODO int64
                 }
             }

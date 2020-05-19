@@ -67,6 +67,7 @@ interface Schema {
     nullable?: boolean;
     readOnly?: boolean;
     maxSize?: number;
+    required?: string[];
 }
 interface ArraySchema extends Schema {
     items: Schema | Reference;

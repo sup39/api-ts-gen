@@ -245,8 +245,9 @@ function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
       // interface
       cp.writeln(`export interface ${typeName} {`, 1);
       const propTypes: [string, SchemaType][] = [];
+      const requireds = new Set(schema.required ?? []);
       for (const [propName, prop] of Object.entries(schema.properties)) {
-        const propType = new SchemaType(prop, true); // TODO required
+        const propType = new SchemaType(prop, requireds.has(propName));
         propTypes.push([propName, propType]);
         cp.writeln(propType.forProp(propName)+';');
       }
@@ -298,7 +299,9 @@ export default function codegen(openAPI: OpenAPI, configUser: ConfigUser) {
   // handler
   ps.push(codegenIHandler(apiFuncs, config, gCP(config.IHandlerName)));
   // server
-  ps.push(codegenRouter(apiFuncs, config, gCP(config.routerName)));
+  if (!config.clientOnly) {
+    ps.push(codegenRouter(apiFuncs, config, gCP(config.routerName)));
+  }
   // client
   ps.push(codegenClientAPI(apiFuncs, config, gCP(config.ClientAPIName)));
   // schema

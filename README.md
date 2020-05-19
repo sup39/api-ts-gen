@@ -519,6 +519,9 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 2.0.3
+- implement `required` property of schema
+- client-only codegen
 #### 2.0.2
 - make number convertible to boolean
 #### 2.0.1

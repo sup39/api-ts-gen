@@ -13,5 +13,6 @@ export interface ConfigOptional {
     utilsTSPath: string;
     outputDir: string;
     validateStatus: (status: string) => boolean;
+    clientOnly: boolean;
 }
 export declare const configDefault: ConfigOptional;

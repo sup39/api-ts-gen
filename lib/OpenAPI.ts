@@ -77,6 +77,7 @@ interface Schema {
   nullable?: boolean;
   readOnly?: boolean;
   maxSize?: number;
+  required?: string[];
 }
 interface ArraySchema extends Schema {
   items: Schema | Reference;
@@ -227,7 +228,9 @@ export class SchemaType {
       } else if (type === 'integer') {
         if (format === 'int32') t = 'int32';
         else {
-          warn(`Unsupport integer format ${format}, use number instead`);
+          if (format && format != 'int64') {
+            warn(`Unsupport integer format ${format}, use number instead`);
+          }
           t = 'number'; // TODO int64
         }
       } else t = type;

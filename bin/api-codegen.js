@@ -8,7 +8,8 @@ const badArgv = (x, code=1) => {
   console.error([
     'Usage: api-codegen <apiDocPath> [flags]',
     'Flags:',
-    '  -o --outputDir: outputDir',
+    '  -o --outputDir <output-dir>: output directory(default: api/generated)',
+    '  -c --client-only: client code only(default: client & server)',
   ].join('\n'));
   process.exit(code);
 };
@@ -20,8 +21,12 @@ const errExit = (x, err, code=1) => {
 
 const argAttrs = ['apiDocPath'];
 const flag2attr = {
-  o: 'outputDir',
-  outputDir: 'outputDir',
+  'o': 'outputDir',
+  'outputDir': 'outputDir',
+};
+const flag2attr0 = { // nullary
+  'c': 'clientOnly',
+  'client-only': 'clientOnly',
 };
 const requiredAttrs = [
   ...argAttrs,
@@ -35,9 +40,17 @@ function parseArgv(argv) {
   const setFlag = flag => {
     flag0 = flag;
     const attr0 = flag2attr[flag];
-    if (attr0 == null) return badArgv(`Unknown flag: ${flag}`);
-    if (config[attr0] != null) return badArgv(`Duplicate flag: ${flag}`);
-    attr = attr0;
+    if (attr0 == null) {
+      const attr0 = flag2attr0[flag];
+      if (attr0 == null) return badArgv(`Unknown flag: ${flag}`);
+      // nullary attr
+      if (config[attr0] != null) return badArgv(`Duplicate flag: ${flag}`);
+      config[attr0] = true;
+    } else {
+      // attr
+      if (config[attr0] != null) return badArgv(`Duplicate flag: ${flag}`);
+      attr = attr0;
+    }
   };
   const setVal = val => {
     if (attr == null) {

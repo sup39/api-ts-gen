@@ -17,6 +17,7 @@ export interface ConfigOptional {
   // other
   outputDir: string;
   validateStatus: (status: string) => boolean;
+  clientOnly: boolean;
 }
 export const configDefault: ConfigOptional = {
   // format
@@ -33,4 +34,5 @@ export const configDefault: ConfigOptional = {
   // other
   outputDir: 'api/generated',
   validateStatus: (status: string) => /^2..$/.test(status),
+  clientOnly: false,
 };

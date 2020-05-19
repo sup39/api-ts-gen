@@ -15,4 +15,5 @@ exports.configDefault = {
     // other
     outputDir: 'api/generated',
     validateStatus: function (status) { return /^2..$/.test(status); },
+    clientOnly: false,
 };

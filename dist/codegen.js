@@ -242,20 +242,22 @@ function codegenClientAPI(funcs, config, cp) {
     return cp.end();
 }
 function codegenSchemas(schemas, config, cp) {
+    var _a;
     var utilsTSPath = config.utilsTSPath;
     // import
     cp.writeln("import {FullDate, StrictTypeParser as STP} from '" + utilsTSPath + "'");
     // schema
-    for (var _i = 0, _a = Object.entries(schemas); _i < _a.length; _i++) {
-        var _b = _a[_i], typeName = _b[0], schema = _b[1];
+    for (var _i = 0, _b = Object.entries(schemas); _i < _b.length; _i++) {
+        var _c = _b[_i], typeName = _c[0], schema = _c[1];
         cp.writeln();
         if (OpenAPI_1.isObjectSchema(schema)) {
             // interface
             cp.writeln("export interface " + typeName + " {", 1);
             var propTypes = [];
-            for (var _c = 0, _d = Object.entries(schema.properties); _c < _d.length; _c++) {
-                var _e = _d[_c], propName = _e[0], prop = _e[1];
-                var propType = new OpenAPI_1.SchemaType(prop, true); // TODO required
+            var requireds = new Set((_a = schema.required) !== null && _a !== void 0 ? _a : []);
+            for (var _d = 0, _e = Object.entries(schema.properties); _d < _e.length; _d++) {
+                var _f = _e[_d], propName = _f[0], prop = _f[1];
+                var propType = new OpenAPI_1.SchemaType(prop, requireds.has(propName));
                 propTypes.push([propName, propType]);
                 cp.writeln(propType.forProp(propName) + ';');
             }
@@ -264,8 +266,8 @@ function codegenSchemas(schemas, config, cp) {
             cp.writeln("export const " + typeName + " = {", 1);
             // .from
             cp.writeln("from: (o: {[_: string]: any}): " + typeName + " => ({", 1);
-            for (var _f = 0, propTypes_1 = propTypes; _f < propTypes_1.length; _f++) {
-                var _g = propTypes_1[_f], n = _g[0], t = _g[1];
+            for (var _g = 0, propTypes_1 = propTypes; _g < propTypes_1.length; _g++) {
+                var _h = propTypes_1[_g], n = _h[0], t = _h[1];
                 cp.writeln(n + ": " + t.stp("o." + n, typeName + '.' + n) + ",");
             }
             cp.writeln('}),', -1);
@@ -273,8 +275,8 @@ function codegenSchemas(schemas, config, cp) {
             cp.writeln("Partial: (o: {[_: string]: any}): Partial<" + typeName + "> => {", 1);
             cp.writeln("const r: Partial<" + typeName + "> = {};");
             var locPartial = "Partial<" + typeName + ">";
-            for (var _h = 0, propTypes_2 = propTypes; _h < propTypes_2.length; _h++) {
-                var _j = propTypes_2[_h], n = _j[0], t = _j[1];
+            for (var _j = 0, propTypes_2 = propTypes; _j < propTypes_2.length; _j++) {
+                var _k = propTypes_2[_j], n = _k[0], t = _k[1];
                 cp.writeln("if (o." + n + " !== void 0) r." + n + " = " + t.stp("o." + n, locPartial + '.' + n) + ";");
             }
             cp.writeln('return r;');
@@ -305,7 +307,9 @@ function codegen(openAPI, configUser) {
     // handler
     ps.push(codegenIHandler(apiFuncs, config, gCP(config.IHandlerName)));
     // server
-    ps.push(codegenRouter(apiFuncs, config, gCP(config.routerName)));
+    if (!config.clientOnly) {
+        ps.push(codegenRouter(apiFuncs, config, gCP(config.routerName)));
+    }
     // client
     ps.push(codegenClientAPI(apiFuncs, config, gCP(config.ClientAPIName)));
     // schema
