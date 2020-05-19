@@ -9,13 +9,15 @@ import {CodePrinter} from './CodePrinter';
 
 function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   const {
-    schemasName, utilsTSPath,
+    schemasName, utilsTSPath, clientOnly,
   } = config;
   // import
   cp.writeln(`import * as Schemas from './${schemasName}'`);
   cp.writeln('import {FullDate, StrictTypeParser as STP, APIPromise} ' +
              `from '${utilsTSPath}'`);
-  cp.writeln('import {RouterContext as CTX} from \'@koa/router\'');
+  if (!clientOnly) {
+    cp.writeln('import {RouterContext as CTX} from \'@koa/router\'');
+  }
   cp.writeln('import {AxiosResponse} from \'axios\'');
   // api req, res types
   cp.writeln(`export type TAPI = {`, 1);
@@ -56,14 +58,16 @@ function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   // TAPI END
   cp.writeln('}', -1);
   // export IServerAPI
-  cp.writeln('');
-  cp.writeln('type ValueOf<T> = T[keyof T];');
-  cp.writeln('type RServerAPI<T> = ValueOf<', 1);
-  cp.writeln('{[K in keyof T]: T[K] extends void ? [K, any?] : [K, T[K]]}>;',
-    -1, false);
-  cp.writeln('export type IServerAPI<IState=any> = {[K in keyof TAPI]:', 1);
-  cp.writeln(`(req: TAPI[K]['req'], state: IState, ctx: CTX) =>`, 1);
-  cp.writeln(`Promise<RServerAPI<TAPI[K]['res']>>}`, -2, false);
+  if (!clientOnly) {
+    cp.writeln('');
+    cp.writeln('type ValueOf<T> = T[keyof T];');
+    cp.writeln('type RServerAPI<T> = ValueOf<', 1);
+    cp.writeln('{[K in keyof T]: T[K] extends void ? [K, any?] : [K, T[K]]}>;',
+      -1, false);
+    cp.writeln('export type IServerAPI<IState=any> = {[K in keyof TAPI]:', 1);
+    cp.writeln(`(req: TAPI[K]['req'], state: IState, ctx: CTX) =>`, 1);
+    cp.writeln(`Promise<RServerAPI<TAPI[K]['res']>>}`, -2, false);
+  }
   // return
   return cp.end();
 }
@@ -223,13 +227,14 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
       const label = `ClientAPI[${funcName}][${status}]`;
       cp.writeln(`${status}: x => ${schema.stp('x', label)},`);
     }
-    cp.writeln(`} as TSTP<TAPI['${funcName}']['res']>,`);
+    cp.writeln(`} as TSTP<TAPI['${funcName}']['res']>,`, -1);
+    cp.tab(1);
     // kRsv
     cp.writeln(`[${
       Object.keys(resTypes).filter(validateStatus).join(', ')
     }]),`, -1);
   }
-  cp.writeln('}');
+  cp.writeln('}', -1);
   return cp.end();
 }
 
