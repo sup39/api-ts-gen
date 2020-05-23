@@ -159,15 +159,17 @@ function codegenClientAPI(funcs, config, cp) {
     // import
     cp.writeln("import {TAPI} from './" + IHandlerName + "'");
     cp.writeln("import * as Schemas from './" + schemasName + "'");
-    cp.writeln("import {APIPromise, StrictTypeParser as STP} from '" + utilsTSPath + "'");
+    cp.writeln("import {APIPromise, StrictTypeParser as STP, " +
+        ("qStringify} from '" + utilsTSPath + "'"));
     cp.writeln("import axios from 'axios'");
     cp.writeln('');
     // type
-    cp.writeln("type TSTP<T> = {[K in keyof T]: (data: any) =>", 1);
-    cp.writeln("T[K] extends void ? any : T[K]};", -1, false);
+    cp.writeln("type TSTP<T> = {[K in keyof T]: (data: any) =>" +
+        "T[K] extends void ? any : T[K]};");
     // axios
     cp.writeln('const $http = axios.create({', 1);
-    cp.writeln('validateStatus: ()=>true,');
+    cp.writeln('validateStatus: () => true,');
+    cp.writeln('paramsSerializer: params => qStringify(params),');
     cp.writeln('});', -1);
     // function
     cp.writeln('\nfunction urlReplacer(url: string, ' +

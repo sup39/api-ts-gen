@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function removeTime(date) {
-    var dt = date.getTimezoneOffset() * 60e3;
-    return new Date(new Date(date.valueOf() - dt).setUTCHours(0, 0, 0, 0));
+    return new Date(date.setHours(0, 0, 0, 0));
 }
 var FullDate = /** @class */ (function () {
     function FullDate() {
@@ -33,7 +32,7 @@ var FullDate = /** @class */ (function () {
     FullDate.prototype.toString = function () {
         var d = this._date;
         var f = function (s) { return ('0' + s).slice(-2); };
-        return d.getUTCFullYear() + "-" + f(d.getUTCMonth() + 1) + "-" + f(d.getUTCDate());
+        return d.getFullYear() + "-" + f(d.getMonth() + 1) + "-" + f(d.getDate());
     };
     FullDate.prototype.toJSON = function () {
         return this.toString();
@@ -51,38 +50,38 @@ var FullDate = /** @class */ (function () {
     });
     Object.defineProperty(FullDate.prototype, "year", {
         get: function () {
-            return this._date.getUTCFullYear();
+            return this._date.getFullYear();
         },
         // setter
         set: function (val) {
-            this._date.setUTCFullYear(val);
+            this._date.setFullYear(val);
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(FullDate.prototype, "month", {
         get: function () {
-            return this._date.getUTCMonth() + 1;
+            return this._date.getMonth() + 1;
         },
         set: function (val) {
-            this._date.setUTCMonth(val - 1);
+            this._date.setMonth(val - 1);
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(FullDate.prototype, "day", {
         get: function () {
-            return this._date.getUTCDate();
+            return this._date.getDate();
         },
         set: function (val) {
-            this._date.setUTCDate(val);
+            this._date.setDate(val);
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(FullDate.prototype, "dayOfWeek", {
         get: function () {
-            return this._date.getUTCDay();
+            return this._date.getDay();
         },
         enumerable: true,
         configurable: true
