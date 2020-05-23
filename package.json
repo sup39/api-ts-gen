@@ -1,6 +1,6 @@
 {
   "name": "@sup39/api-ts-gen",
-  "version": "2.0.4",
+  "version": "2.0.4-a",
   "description": "OpenAPI code generator for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,10 +38,10 @@
     "axios": "^0.19.2",
     "eslint": "^6.8.0",
     "eslint-config-google": "^0.14.0",
-    "qs": "^6.9.4",
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "js-yaml": "^3.13.1"
+    "js-yaml": "^3.13.1",
+    "qs": "^6.9.4"
   }
 }
