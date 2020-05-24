@@ -1,3 +1,6 @@
+declare type Dict<T> = {
+    [_: string]: T;
+};
 export interface OpenAPI {
     paths: Paths;
     components?: Components;
@@ -14,13 +17,10 @@ interface PathItem {
     [_: string]: any;
 }
 interface Operation {
-    responses: Responses;
-    parameters?: Parameter[];
-    requestBody?: RequestBody;
+    responses: Dict<Response | Reference>;
+    parameters?: Array<Parameter | Reference>;
+    requestBody?: RequestBody | Reference;
     operationId?: string;
-}
-interface Responses {
-    [status: string]: Response;
 }
 interface Response {
     content?: TMediaTypes;
@@ -48,20 +48,16 @@ declare type EParameterIn = 'query' | 'header' | 'path' | 'cookie';
 export declare const ELParameterIn: Array<EParameterIn>;
 interface RequestBody {
     description: string;
-    content: {
-        [contentType: string]: MediaType;
-    };
+    content: Dict<MediaType>;
     required?: boolean;
 }
 interface Components {
-    schemas: {
-        [_: string]: Schema | Reference;
-    };
+    schemas: Dict<Schema | Reference>;
+    responses: Dict<Response | Reference>;
+    parameters: Dict<Parameter | Reference>;
+    requestBodies: Dict<RequestBody | Reference>;
 }
-export declare type Schemas = {
-    [_: string]: Schema | Reference;
-};
-interface Schema {
+export interface Schema {
     type: string;
     format?: string;
     nullable?: boolean;
@@ -79,7 +75,7 @@ interface ObjectSchema extends Schema {
     };
 }
 export declare function isObjectSchema(x: any): x is ObjectSchema;
-interface Reference {
+export interface Reference {
     $ref: string;
     maxSize?: string | number;
 }
@@ -108,6 +104,7 @@ declare type TReqTypes = {
 declare type TResTypes = {
     [status: string]: SchemaType;
 };
+export declare function resolveRef<T>(obj: T | Reference, dict: Dict<T | Reference> | undefined, prefix: string): T | undefined;
 export declare class SchemaType {
     private _required;
     private _typeName?;

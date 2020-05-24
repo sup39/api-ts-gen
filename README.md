@@ -519,6 +519,8 @@ This tool only supports `application/json` type for request and response body. A
 Other $ref like requestBody, responseBody are not supported currently.
 
 ## Versions
+#### 2.0.5
+- implement \$ref support for responses, parameters, requestBody
 #### 2.0.4
 - fix FullDate stringify in Axios params
 - use local timezone instead of UTC in FullDate

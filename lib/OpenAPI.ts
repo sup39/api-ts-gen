@@ -1,5 +1,6 @@
 import {StrictTypeParser as STP} from './utils/StrictTypeParser';
 const warn = (x: any) => console.warn('\x1b[1;33mWarning: '+x+'\x1b[0m');
+type Dict<T> = {[_: string]: T};
 
 /* ==== type declaration ==== */
 export interface OpenAPI {
@@ -22,16 +23,13 @@ interface PathItem {
 type EMethod = 'get' | 'put' | 'post' | 'delete' | 'patch';
 const ELMethod: Array<EMethod> = ['get', 'put', 'post', 'delete', 'patch'];
 interface Operation {
-  responses: Responses;
-  parameters?: Parameter[];
-  requestBody?: RequestBody;
+  responses: Dict<Response | Reference>;
+  parameters?: Array<Parameter | Reference>;
+  requestBody?: RequestBody | Reference;
   operationId?: string;
 }
 
 // response
-interface Responses {
-  [status: string]: Response // | Reference;
-}
 interface Response {
   // headers?: Header;
   content?: TMediaTypes;
@@ -60,18 +58,20 @@ export const ELParameterIn: Array<EParameterIn> = [
 // request body
 interface RequestBody {
   description: string;
-  content: {[contentType: string]: MediaType};
+  content: Dict<MediaType>;
   required?: boolean;
 }
 
 // components
 interface Components {
-  schemas: {[_: string]: Schema | Reference};
+  schemas: Dict<Schema | Reference>;
+  responses: Dict<Response | Reference>;
+  parameters: Dict<Parameter | Reference>;
+  requestBodies: Dict<RequestBody | Reference>;
 }
 
 // schemeType
-export type Schemas = {[_: string]: Schema | Reference};
-interface Schema {
+export interface Schema {
   type: string;
   format?: string;
   nullable?: boolean;
@@ -91,7 +91,7 @@ interface ObjectSchema extends Schema {
 export function isObjectSchema(x: any): x is ObjectSchema {
   return x.type === 'object';
 }
-interface Reference {
+export interface Reference {
   $ref: string;
   maxSize?: string | number;
 }
@@ -118,8 +118,31 @@ type TReqTypes = {
 type TResTypes = {[status: string]: SchemaType};
 /* ==== ==== */
 
-function mediaTypes2type(content?: TMediaTypes, required?: boolean):
-  SchemaType {
+// Reference
+export function resolveRef<T>(
+  obj: T|Reference, dict: Dict<T|Reference>|undefined, prefix: string,
+): T | undefined {
+  do {
+    if (!isReference(obj)) return obj;
+    const ref = obj.$ref;
+    if (ref.startsWith(prefix)) {
+      const name = ref.substring(prefix.length+1); // $prefix/
+      const obj0 = dict?.[name];
+      if (obj0 === undefined) {
+        console.error(`ref not found: ${ref}`);
+        return;
+      }
+      obj = obj0;
+    } else {
+      console.error(`Invalid ref: ${ref}, expect prefix ${prefix}`);
+      return;
+    }
+  } while (true);
+}
+
+function mediaTypes2type(
+  content?: TMediaTypes, required?: boolean,
+): SchemaType {
   const media = content?.['application/json']; // TODO
   if (media == null) {
     if (Object.keys(content ?? {}).length > 0) {
@@ -250,7 +273,8 @@ export class SchemaType {
 
 export type APIFunctions = {[_: string]: APIFunction};
 export function apiFunctionsOf(openAPI: OpenAPI): APIFunctions {
-  const {paths} = openAPI;
+  const {paths, components: comps} = openAPI;
+  const compPrefix = '#/components/';
   const functions: APIFunctions = {};
   for (const [url, pathItem] of Object.entries(paths)) {
     for (const method of ELMethod) {
@@ -270,7 +294,10 @@ export function apiFunctionsOf(openAPI: OpenAPI): APIFunctions {
       const resTypes: TResTypes = {};
       // reqParas
       if (parameters != null) {
-        for (const para of parameters) {
+        for (const rPara of parameters) {
+          const para = resolveRef(
+            rPara, comps?.parameters, compPrefix+'parameters');
+          if (para == null) continue;
           const {
             name, in: _in, required, schema,
           } = para;
@@ -282,13 +309,18 @@ export function apiFunctionsOf(openAPI: OpenAPI): APIFunctions {
       }
       // requestBody
       if (requestBody != null) {
+        const requestBodyO = resolveRef(
+          requestBody, comps?.requestBodies, compPrefix+'requestBodies');
+        if (requestBodyO == null) continue;
         reqTypes.body = mediaTypes2type(
-          requestBody.content,
-          requestBody.required,
+          requestBodyO.content,
+          requestBodyO.required,
         );
       }
       // responses
-      for (const [status, res] of Object.entries(responses)) {
+      for (const [status, rRes] of Object.entries(responses)) {
+        const res = resolveRef(rRes, comps?.responses, compPrefix+'responses');
+        if (res == null) continue;
         resTypes[status] = mediaTypes2type(res.content, true);
       }
       // add to group

@@ -28,6 +28,28 @@ var APIFunction = /** @class */ (function () {
     return APIFunction;
 }());
 /* ==== ==== */
+// Reference
+function resolveRef(obj, dict, prefix) {
+    do {
+        if (!isReference(obj))
+            return obj;
+        var ref = obj.$ref;
+        if (ref.startsWith(prefix)) {
+            var name_1 = ref.substring(prefix.length + 1); // $prefix/
+            var obj0 = dict === null || dict === void 0 ? void 0 : dict[name_1];
+            if (obj0 === undefined) {
+                console.error("ref not found: " + ref);
+                return;
+            }
+            obj = obj0;
+        }
+        else {
+            console.error("Invalid ref: " + ref + ", expect prefix " + prefix);
+            return;
+        }
+    } while (true);
+}
+exports.resolveRef = resolveRef;
 function mediaTypes2type(content, required) {
     var media = content === null || content === void 0 ? void 0 : content['application/json']; // TODO
     if (media == null) {
@@ -94,8 +116,8 @@ var SchemaType = /** @class */ (function () {
         else if (isObjectSchema(schema)) {
             sType = '{';
             for (var _i = 0, _b = Object.entries(schema.properties); _i < _b.length; _i++) {
-                var _c = _b[_i], name_1 = _c[0], sub = _c[1];
-                sType += name_1 + ": " + SchemaType.typeNameOf(sub) + ", ";
+                var _c = _b[_i], name_2 = _c[0], sub = _c[1];
+                sType += name_2 + ": " + SchemaType.typeNameOf(sub) + ", ";
             }
             sType += '}';
         }
@@ -137,8 +159,8 @@ var SchemaType = /** @class */ (function () {
         else if (isObjectSchema(schema)) {
             sStp = '()=>({';
             for (var _i = 0, _a = Object.entries(schema.properties); _i < _a.length; _i++) {
-                var _b = _a[_i], name_2 = _b[0], sub = _b[1];
-                sStp += name_2 + ": " + SchemaType.gcStp(para + '.' + name_2, sub, label + '.' + name_2, false) + ", ";
+                var _b = _a[_i], name_3 = _b[0], sub = _b[1];
+                sStp += name_3 + ": " + SchemaType.gcStp(para + '.' + name_3, sub, label + '.' + name_3, false) + ", ";
             }
             sStp += '})';
         }
@@ -188,7 +210,8 @@ var SchemaType = /** @class */ (function () {
 }());
 exports.SchemaType = SchemaType;
 function apiFunctionsOf(openAPI) {
-    var paths = openAPI.paths;
+    var paths = openAPI.paths, comps = openAPI.components;
+    var compPrefix = '#/components/';
     var functions = {};
     for (var _i = 0, _a = Object.entries(paths); _i < _a.length; _i++) {
         var _b = _a[_i], url = _b[0], pathItem = _b[1];
@@ -204,32 +227,41 @@ function apiFunctionsOf(openAPI) {
                     'operationId should be given');
                 continue;
             }
-            var name_3 = operationId;
+            var name_4 = operationId;
             var reqTypes = {};
             var resTypes = {};
             // reqParas
             if (parameters != null) {
                 for (var _d = 0, parameters_1 = parameters; _d < parameters_1.length; _d++) {
-                    var para = parameters_1[_d];
-                    var name_4 = para.name, _in = para.in, required = para.required, schema = para.schema;
+                    var rPara = parameters_1[_d];
+                    var para = resolveRef(rPara, comps === null || comps === void 0 ? void 0 : comps.parameters, compPrefix + 'parameters');
+                    if (para == null)
+                        continue;
+                    var name_5 = para.name, _in = para.in, required = para.required, schema = para.schema;
                     // add
                     if (reqTypes[_in] == null)
                         reqTypes[_in] = {};
-                    reqTypes[_in][name_4] = new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false);
+                    reqTypes[_in][name_5] = new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false);
                 }
             }
             // requestBody
             if (requestBody != null) {
-                reqTypes.body = mediaTypes2type(requestBody.content, requestBody.required);
+                var requestBodyO = resolveRef(requestBody, comps === null || comps === void 0 ? void 0 : comps.requestBodies, compPrefix + 'requestBodies');
+                if (requestBodyO == null)
+                    continue;
+                reqTypes.body = mediaTypes2type(requestBodyO.content, requestBodyO.required);
             }
             // responses
             for (var _e = 0, _f = Object.entries(responses); _e < _f.length; _e++) {
-                var _g = _f[_e], status_1 = _g[0], res = _g[1];
+                var _g = _f[_e], status_1 = _g[0], rRes = _g[1];
+                var res = resolveRef(rRes, comps === null || comps === void 0 ? void 0 : comps.responses, compPrefix + 'responses');
+                if (res == null)
+                    continue;
                 resTypes[status_1] = mediaTypes2type(res.content, true);
             }
             // add to group
             var saf = new APIFunction(method, url, reqTypes, resTypes);
-            functions[name_3] = saf;
+            functions[name_4] = saf;
         }
     }
     return functions;

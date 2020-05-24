@@ -3,9 +3,10 @@ import * as path from 'path';
 import {Config, ConfigUser, configDefault} from './Config';
 import {
   apiFunctionsOf, OpenAPI, APIFunctions as APIFuncs,
-  ELParameterIn, SchemaType, Schemas, isObjectSchema,
+  ELParameterIn, SchemaType, Schema, isObjectSchema, Reference, resolveRef,
 } from './OpenAPI';
 import {CodePrinter} from './CodePrinter';
+type Dict<T> = {[_: string]: T};
 
 function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   const {
@@ -239,13 +240,17 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   return cp.end();
 }
 
-function codegenSchemas(schemas: Schemas, config: Config, cp: CodePrinter) {
+function codegenSchemas(
+  schemas: Dict<Schema|Reference>, config: Config, cp: CodePrinter,
+) {
   const {utilsTSPath} = config;
   // import
   cp.writeln(
     `import {FullDate, StrictTypeParser as STP} from '${utilsTSPath}'`);
   // schema
-  for (const [typeName, schema] of Object.entries(schemas)) {
+  for (const [typeName, rSchema] of Object.entries(schemas)) {
+    const schema = resolveRef(rSchema, schemas, '#/components/schemas');
+    if (schema == null) continue;
     cp.writeln();
     if (isObjectSchema(schema)) {
       // interface

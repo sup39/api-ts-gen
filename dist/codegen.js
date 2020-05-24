@@ -255,7 +255,10 @@ function codegenSchemas(schemas, config, cp) {
     cp.writeln("import {FullDate, StrictTypeParser as STP} from '" + utilsTSPath + "'");
     // schema
     for (var _i = 0, _b = Object.entries(schemas); _i < _b.length; _i++) {
-        var _c = _b[_i], typeName = _c[0], schema = _c[1];
+        var _c = _b[_i], typeName = _c[0], rSchema = _c[1];
+        var schema = OpenAPI_1.resolveRef(rSchema, schemas, '#/components/schemas');
+        if (schema == null)
+            continue;
         cp.writeln();
         if (OpenAPI_1.isObjectSchema(schema)) {
             // interface
