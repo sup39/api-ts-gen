@@ -107,16 +107,17 @@ declare type TResTypes = {
 export declare function resolveRef<T>(obj: T | Reference, dict: Dict<T | Reference> | undefined, prefix: string): T | undefined;
 export declare class SchemaType {
     private _required;
+    private _sameFile;
     private _typeName?;
     get typeName(): string;
     get required(): boolean;
     get maxSize(): string | number | undefined;
     forProp(prop: string): string;
-    stp(prop: string, label: string, partial?: boolean): string;
+    stp(prop: string, label: string, partial?: boolean, sameFile?: boolean): string;
     private schema;
-    constructor(schema: Schema | Reference | string, _required: boolean);
-    static typeNameOf(schema: Schema | Reference): string;
-    static gcStp(para: string, schema: Schema | Reference, label: string, partial: boolean): string;
+    constructor(schema: Schema | Reference | string, _required: boolean, _sameFile: boolean);
+    static typeNameOf(schema: Schema | Reference, sameFile: boolean): string;
+    static gcStp(para: string, schema: Schema | Reference, label: string, partial: boolean, sameFile: boolean): string;
 }
 export declare type APIFunctions = {
     [_: string]: APIFunction;

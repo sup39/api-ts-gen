@@ -166,6 +166,9 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   // type
   cp.writeln(`type TSTP<T> = {[K in keyof T]: (data: any) =>`+
     `T[K] extends void ? any : T[K]};`);
+  cp.writeln(`export type ExID<T> = {[K in keyof T]: ` +
+    `'id' extends keyof T[K] ? {id: T[K]['id']} : T[K]};`);
+  cp.writeln();
   // axios
   cp.writeln('const $http = axios.create({', 1);
   cp.writeln('validateStatus: () => true,');
@@ -190,7 +193,7 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   cp.writeln('},', -1);
   // functions
   for (const [funcName, func] of Object.entries(funcs)) {
-    const gcReq = (_in: string) => `TAPI['${funcName}']['req']['${_in}']`;
+    const gcReq = (_in: string) =>`TAPI['${funcName}']['req']['${_in}']`;
     const {method, url, reqTypes, resTypes} = func;
     const {
       query, header, path, body,
@@ -211,7 +214,7 @@ function codegenClientAPI(funcs: APIFuncs, config: Config, cp: CodePrinter) {
     }
     // body
     if (body != null) {
-      cp.writeln(`body${body.required ? '' : '?'}: ${gcReq('body')},`);
+      cp.writeln(`body${body.required ? '' : '?'}: ExID<${gcReq('body')}>,`);
     }
     // return value
     cp.tab(-1);
@@ -258,7 +261,7 @@ function codegenSchemas(
       const propTypes: [string, SchemaType][] = [];
       const requireds = new Set(schema.required ?? []);
       for (const [propName, prop] of Object.entries(schema.properties)) {
-        const propType = new SchemaType(prop, requireds.has(propName));
+        const propType = new SchemaType(prop, requireds.has(propName), true);
         propTypes.push([propName, propType]);
         cp.writeln(propType.forProp(propName)+';');
       }
@@ -268,7 +271,7 @@ function codegenSchemas(
       // .from
       cp.writeln(`from: (o: {[_: string]: any}): ${typeName} => ({`, 1);
       for (const [n, t] of propTypes) {
-        cp.writeln(`${n}: ${t.stp(`o.${n}`, typeName+'.'+n)},`);
+        cp.writeln(`${n}: ${t.stp(`o.${n}`, typeName+'.'+n, false, true)},`);
       }
       cp.writeln('}),', -1);
       // Partial
@@ -278,7 +281,7 @@ function codegenSchemas(
       const locPartial = `Partial<${typeName}>`;
       for (const [n, t] of propTypes) {
         cp.writeln(`if (o.${n} !== void 0) r.${n} = ${
-          t.stp(`o.${n}`, locPartial+'.'+n)};`);
+          t.stp(`o.${n}`, locPartial+'.'+n, false, true)};`);
       }
       cp.writeln('return r;');
       cp.writeln('},', -1);
@@ -289,7 +292,8 @@ function codegenSchemas(
       // end of const
       cp.writeln('}', -1);
     } else {
-      cp.writeln(`export type ${typeName} = ${SchemaType.typeNameOf(schema)}`);
+      cp.writeln(`export type ${typeName} = ` +
+        SchemaType.typeNameOf(schema, true));
     }
   }
   // return

@@ -8,7 +8,7 @@ const badArgv = (x, code=1) => {
   console.error([
     'Usage: api-codegen <apiDocPath> [flags]',
     'Flags:',
-    '  -o --outputDir <output-dir>: output directory(default: api/generated)',
+    '  -o --output-dir <output-dir>: output directory(default: api/generated)',
     '  -c --client-only: client code only(default: client & server)',
   ].join('\n'));
   process.exit(code);
@@ -22,7 +22,7 @@ const errExit = (x, err, code=1) => {
 const argAttrs = ['apiDocPath'];
 const flag2attr = {
   'o': 'outputDir',
-  'outputDir': 'outputDir',
+  'output-dir': 'outputDir',
 };
 const flag2attr0 = { // nullary
   'c': 'clientOnly',

@@ -65,7 +65,11 @@ export class FullDate {
     this._date.setDate(val);
   }
   // func
-  advance(period: number): FullDate {
+  advance(period: number): this {
+    this._date = new Date(this._date.valueOf()+period*86400e3);
+    return this;
+  }
+  advanced(period: number): FullDate {
     return new FullDate(this._date.valueOf()+period*86400e3);
   }
   distanceFrom(d0: FullDate): number {

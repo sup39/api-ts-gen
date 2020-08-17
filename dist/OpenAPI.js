@@ -56,21 +56,22 @@ function mediaTypes2type(content, required) {
         if (Object.keys(content !== null && content !== void 0 ? content : {}).length > 0) {
             warn('only support application/json now');
         }
-        return new SchemaType('any', false);
+        return new SchemaType('any', false, false);
     }
     // schema
     var schema = media.schema;
-    return new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false);
+    return new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false, false);
 }
 var SchemaType = /** @class */ (function () {
-    function SchemaType(schema, _required) {
+    function SchemaType(schema, _required, _sameFile) {
         this._required = _required;
+        this._sameFile = _sameFile;
         this.schema = typeof schema === 'string' ? { type: schema } : schema;
     }
     Object.defineProperty(SchemaType.prototype, "typeName", {
         get: function () {
             var _a;
-            return (_a = this._typeName) !== null && _a !== void 0 ? _a : (this._typeName = SchemaType.typeNameOf(this.schema));
+            return (_a = this._typeName) !== null && _a !== void 0 ? _a : (this._typeName = SchemaType.typeNameOf(this.schema, this._sameFile));
         },
         enumerable: true,
         configurable: true
@@ -92,12 +93,13 @@ var SchemaType = /** @class */ (function () {
     SchemaType.prototype.forProp = function (prop) {
         return "" + prop + (this.required ? '' : '?') + ": " + this.typeName;
     };
-    SchemaType.prototype.stp = function (prop, label, partial) {
+    SchemaType.prototype.stp = function (prop, label, partial, sameFile) {
         if (partial === void 0) { partial = false; }
-        var stp = SchemaType.gcStp(prop, this.schema, label, partial);
+        if (sameFile === void 0) { sameFile = false; }
+        var stp = SchemaType.gcStp(prop, this.schema, label, partial, sameFile);
         return (this.required ? '' : prop + "===void 0 ? void 0 : ") + stp;
     };
-    SchemaType.typeNameOf = function (schema) {
+    SchemaType.typeNameOf = function (schema, sameFile) {
         var _a;
         if (isReference(schema)) {
             var $ref = schema.$ref;
@@ -106,18 +108,18 @@ var SchemaType = /** @class */ (function () {
                 warn("Invalid $ref, use any instead: " + $ref);
                 return 'any';
             }
-            return "Schemas." + typeName;
+            return sameFile ? typeName : "Schemas." + typeName;
         }
         var type = schema.type, format = schema.format, nullable = schema.nullable, readOnly = schema.readOnly;
         var sType = type;
         if (isArraySchema(schema)) {
-            sType = "Array<" + SchemaType.typeNameOf(schema.items) + ">";
+            sType = "Array<" + SchemaType.typeNameOf(schema.items, sameFile) + ">";
         }
         else if (isObjectSchema(schema)) {
             sType = '{';
             for (var _i = 0, _b = Object.entries(schema.properties); _i < _b.length; _i++) {
                 var _c = _b[_i], name_2 = _c[0], sub = _c[1];
-                sType += name_2 + ": " + SchemaType.typeNameOf(sub) + ", ";
+                sType += name_2 + ": " + SchemaType.typeNameOf(sub, sameFile) + ", ";
             }
             sType += '}';
         }
@@ -141,11 +143,11 @@ var SchemaType = /** @class */ (function () {
             sType = "Readonly<" + sType + ">";
         return sType;
     };
-    SchemaType.gcStp = function (para, schema, label, partial) {
+    SchemaType.gcStp = function (para, schema, label, partial, sameFile) {
         // partial: Object only, 1 layer only
         // object
         if (isReference(schema)) {
-            var typeName = new SchemaType(schema, true).typeName;
+            var typeName = new SchemaType(schema, true, sameFile).typeName;
             return typeName + "." + (partial ? 'Partial' : 'from') + "(" + para + ")";
         }
         // any
@@ -154,13 +156,13 @@ var SchemaType = /** @class */ (function () {
         if (type === 'any')
             return para;
         if (isArraySchema(schema)) {
-            sStp = "(v, l)=>STP._Array(v, l, elm=>" + SchemaType.gcStp('elm', schema.items, label + "[]", false) + ")";
+            sStp = "(v, l)=>STP._Array(v, l, elm=>" + SchemaType.gcStp('elm', schema.items, label + "[]", false, sameFile) + ")";
         }
         else if (isObjectSchema(schema)) {
             sStp = '()=>({';
             for (var _i = 0, _a = Object.entries(schema.properties); _i < _a.length; _i++) {
                 var _b = _a[_i], name_3 = _b[0], sub = _b[1];
-                sStp += name_3 + ": " + SchemaType.gcStp(para + '.' + name_3, sub, label + '.' + name_3, false) + ", ";
+                sStp += name_3 + ": " + SchemaType.gcStp(para + '.' + name_3, sub, label + '.' + name_3, false, sameFile) + ", ";
             }
             sStp += '})';
         }
@@ -241,7 +243,7 @@ function apiFunctionsOf(openAPI) {
                     // add
                     if (reqTypes[_in] == null)
                         reqTypes[_in] = {};
-                    reqTypes[_in][name_5] = new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false);
+                    reqTypes[_in][name_5] = new SchemaType(schema !== null && schema !== void 0 ? schema : 'any', required !== null && required !== void 0 ? required : false, false);
                 }
             }
             // requestBody

@@ -148,17 +148,17 @@ function mediaTypes2type(
     if (Object.keys(content ?? {}).length > 0) {
       warn('only support application/json now');
     }
-    return new SchemaType('any', false);
+    return new SchemaType('any', false, false);
   }
   // schema
   const {schema} = media;
-  return new SchemaType(schema ?? 'any', required ?? false);
+  return new SchemaType(schema ?? 'any', required ?? false, false);
 }
 export class SchemaType {
   private _typeName?: string;
   get typeName(): string {
     return this._typeName ??
-      (this._typeName = SchemaType.typeNameOf(this.schema));
+      (this._typeName = SchemaType.typeNameOf(this.schema, this._sameFile));
   }
   get required(): boolean {
     return this._required;
@@ -169,18 +169,24 @@ export class SchemaType {
   forProp(prop: string): string {
     return `${prop}${this.required ? '' : '?'}: ${this.typeName}`;
   }
-  stp(prop: string, label: string, partial: boolean=false): string {
-    const stp = SchemaType.gcStp(prop, this.schema, label, partial);
+  stp(
+    prop: string, label: string,
+    partial: boolean=false, sameFile: boolean=false,
+  ): string {
+    const stp = SchemaType.gcStp(prop, this.schema, label, partial, sameFile);
     return (this.required ? '' : `${prop}===void 0 ? void 0 : `)+stp;
   }
 
   private schema: Schema | Reference;
-  constructor(schema: Schema | Reference | string,
-              private _required: boolean) {
+  constructor(
+    schema: Schema | Reference | string,
+    private _required: boolean,
+    private _sameFile: boolean,
+  ) {
     this.schema = typeof schema === 'string' ? {type: schema} : schema;
   }
 
-  static typeNameOf(schema: Schema | Reference): string {
+  static typeNameOf(schema: Schema | Reference, sameFile: boolean): string {
     if (isReference(schema)) {
       const {$ref} = schema;
       const typeName = /^#\/components\/schemas\/(\w+)$/g.exec($ref)?.[1];
@@ -188,18 +194,18 @@ export class SchemaType {
         warn(`Invalid $ref, use any instead: ${$ref}`);
         return 'any';
       }
-      return `Schemas.${typeName}`;
+      return sameFile ? typeName : `Schemas.${typeName}`;
     }
     const {
       type, format, nullable, readOnly,
     } = schema;
     let sType = type;
     if (isArraySchema(schema)) {
-      sType = `Array<${SchemaType.typeNameOf(schema.items)}>`;
+      sType = `Array<${SchemaType.typeNameOf(schema.items, sameFile)}>`;
     } else if (isObjectSchema(schema)) {
       sType = '{';
       for (const [name, sub] of Object.entries(schema.properties)) {
-        sType += `${name}: ${SchemaType.typeNameOf(sub)}, `;
+        sType += `${name}: ${SchemaType.typeNameOf(sub, sameFile)}, `;
       }
       sType += '}';
     } else if (type === 'string') {
@@ -214,11 +220,11 @@ export class SchemaType {
     return sType;
   }
   static gcStp(para: string, schema: Schema | Reference,
-    label: string, partial: boolean): string {
+    label: string, partial: boolean, sameFile: boolean): string {
     // partial: Object only, 1 layer only
     // object
     if (isReference(schema)) {
-      const typeName = new SchemaType(schema, true).typeName;
+      const typeName = new SchemaType(schema, true, sameFile).typeName;
       return `${typeName}.${partial ? 'Partial': 'from'}(${para})`;
     }
     // any
@@ -226,13 +232,13 @@ export class SchemaType {
     let sStp;
     if (type === 'any') return para;
     if (isArraySchema(schema)) {
-      sStp = `(v, l)=>STP._Array(v, l, elm=>${
-        SchemaType.gcStp('elm', schema.items, `${label}[]`, false)})`;
+      sStp = `(v, l)=>STP._Array(v, l, elm=>${SchemaType.gcStp(
+        'elm', schema.items, `${label}[]`, false, sameFile)})`;
     } else if (isObjectSchema(schema)) {
       sStp = '()=>({';
       for (const [name, sub] of Object.entries(schema.properties)) {
-        sStp += `${name}: ${
-          SchemaType.gcStp(para+'.'+name, sub, label+'.'+name, false)}, `;
+        sStp += `${name}: ${SchemaType.gcStp(
+          para+'.'+name, sub, label+'.'+name, false, sameFile)}, `;
       }
       sStp += '})';
     } else {
@@ -304,7 +310,7 @@ export function apiFunctionsOf(openAPI: OpenAPI): APIFunctions {
           // add
           if (reqTypes[_in] == null) reqTypes[_in] = {};
           reqTypes[_in]![name] = new SchemaType(
-            schema ?? 'any', required ?? false);
+            schema ?? 'any', required ?? false, false);
         }
       }
       // requestBody

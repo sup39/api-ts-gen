@@ -3,9 +3,10 @@ import * as Qs0 from 'qs';
 const options0 = {
   filter(prefix: string, value: any) {
     const con = value?.constructor;
-    // use Class.toString() if defined explicitly (exception: Object, Date)
-    return (con && con !== Object && con !== Date &&
-      con.prototype?.hasOwnProperty('toString')) ? value.toString() : value;
+    if (con === null || con === Array || con === Object) return value;
+    if (con === Date) return value.toJSON();
+    // use Class.toString() if defined explicitly
+    return con.prototype?.hasOwnProperty('toString') ? value.toString() : value;
   },
 };
 

@@ -166,6 +166,9 @@ function codegenClientAPI(funcs, config, cp) {
     // type
     cp.writeln("type TSTP<T> = {[K in keyof T]: (data: any) =>" +
         "T[K] extends void ? any : T[K]};");
+    cp.writeln("export type ExID<T> = {[K in keyof T]: " +
+        "'id' extends keyof T[K] ? {id: T[K]['id']} : T[K]};");
+    cp.writeln();
     // axios
     cp.writeln('const $http = axios.create({', 1);
     cp.writeln('validateStatus: () => true,');
@@ -212,7 +215,7 @@ function codegenClientAPI(funcs, config, cp) {
         }
         // body
         if (body != null) {
-            cp.writeln("body" + (body.required ? '' : '?') + ": " + gcReq('body') + ",");
+            cp.writeln("body" + (body.required ? '' : '?') + ": ExID<" + gcReq('body') + ">,");
         }
         // return value
         cp.tab(-1);
@@ -267,7 +270,7 @@ function codegenSchemas(schemas, config, cp) {
             var requireds = new Set((_a = schema.required) !== null && _a !== void 0 ? _a : []);
             for (var _d = 0, _e = Object.entries(schema.properties); _d < _e.length; _d++) {
                 var _f = _e[_d], propName = _f[0], prop = _f[1];
-                var propType = new OpenAPI_1.SchemaType(prop, requireds.has(propName));
+                var propType = new OpenAPI_1.SchemaType(prop, requireds.has(propName), true);
                 propTypes.push([propName, propType]);
                 cp.writeln(propType.forProp(propName) + ';');
             }
@@ -278,7 +281,7 @@ function codegenSchemas(schemas, config, cp) {
             cp.writeln("from: (o: {[_: string]: any}): " + typeName + " => ({", 1);
             for (var _g = 0, propTypes_1 = propTypes; _g < propTypes_1.length; _g++) {
                 var _h = propTypes_1[_g], n = _h[0], t = _h[1];
-                cp.writeln(n + ": " + t.stp("o." + n, typeName + '.' + n) + ",");
+                cp.writeln(n + ": " + t.stp("o." + n, typeName + '.' + n, false, true) + ",");
             }
             cp.writeln('}),', -1);
             // Partial
@@ -287,7 +290,7 @@ function codegenSchemas(schemas, config, cp) {
             var locPartial = "Partial<" + typeName + ">";
             for (var _j = 0, propTypes_2 = propTypes; _j < propTypes_2.length; _j++) {
                 var _k = propTypes_2[_j], n = _k[0], t = _k[1];
-                cp.writeln("if (o." + n + " !== void 0) r." + n + " = " + t.stp("o." + n, locPartial + '.' + n) + ";");
+                cp.writeln("if (o." + n + " !== void 0) r." + n + " = " + t.stp("o." + n, locPartial + '.' + n, false, true) + ";");
             }
             cp.writeln('return r;');
             cp.writeln('},', -1);
@@ -299,7 +302,8 @@ function codegenSchemas(schemas, config, cp) {
             cp.writeln('}', -1);
         }
         else {
-            cp.writeln("export type " + typeName + " = " + OpenAPI_1.SchemaType.typeNameOf(schema));
+            cp.writeln("export type " + typeName + " = " +
+                OpenAPI_1.SchemaType.typeNameOf(schema, true));
         }
     }
     // return

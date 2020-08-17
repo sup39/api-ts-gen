@@ -57,14 +57,20 @@ module.exports = {
 ```
 ### 3. Run this tool
 ```
-yarn run api-codegen <your-openapi-document> [-o <output-dir>] [-s <ctx.state-interface-path>]
+yarn run api-codegen <your-openapi-document> [-o <output-dir>] [-s <ctx.state-interface-path>] [-c]
 ```
+
 The default output directory is `api/generated`.  
 For example, if you put your api document at `api.yml`, and want the generated code put in `generated/` directory, you can execute
 ```
 # example
 yarn run api-codegen api.yml -o generated
 ```
+
+#### Flags(Optional)
+- `-o` `--output-dir <output-dir>`: output directory(default: api/generated)
+- `-c` `--client-only`: client code only(default: client & server)
+
 ### 4. Implement server api
 ```
 import {IServerAPI} from '#api/IServerAPI';
@@ -154,7 +160,7 @@ where the `path`, `query`, `header`, `cookie` is a object whose key is the `name
 
 ```
 import api from '#api/ClientAPI';
-// import {FullDate} from '@sup39/api-ts-gen/utils';
+// import {FullDate} from '@sup39/api-ts-gen/dist/utils';
 // import {SchemaA} from '#api/schemas';
 
 // ...
@@ -178,9 +184,9 @@ api.$baseURL = '/same/as/the/prefix/in/server';
 If the format is `string` `date`, you should use `FullDate` instead of `Date`.
 `FullDate` is a wrapper of `Date`, which implements `.toString()`, `.toJSON()` and `.valueOf()` to make it more convenience to convert it to String or JSON.
 
-Import `FullDate` class from `@sup39/api-ts-gen/utils`.
+Import `FullDate` class from `@sup39/api-ts-gen/dist/utils`.
 ```
-import {FullDate} from '@sup39/api-ts-gen/utils';
+import {FullDate} from '@sup39/api-ts-gen/dist/utils';
 
 // initialization
 new FullDate(new Date()); // from a Date instance
@@ -204,13 +210,23 @@ d.month = 3; // date.setUTCMonth(3-1)
 d.day = 5; // date.setUTCDate(5)
 
 // method
-/*
-  .advance(period: number): FullDate
-  return a new FullDate that advanced by $peroid days
+/* CAUTION: this method has been updated since version 2.0.6
+  .advance(period: number): this
+  return this advanced by $peroid days
 */
 const d0 = new FullDate('2015-05-04');
 d0.advance(217) // 2015-12-07
 d0.advance(-1129) // 2012-03-31
+d0 === d0.advance(-1129) // true
+
+/*
+  .advanced(period: number): FullDate
+  return a new FullDate advanced by $peroid days
+*/
+const d0 = new FullDate('2015-05-04');
+d0.advance(217) // 2015-12-07
+d0.advance(-1129) // 2012-03-31
+d0 === d0.advance(-1129) // false
 
 /*
   .distanceFrom(d0: FullDate): number
@@ -511,44 +527,120 @@ Its type is `Array<keyof Schema>`.
 NamedCircle.fields // ['name', 'radius', 'color']: Array<keyof NamedCircle>
 ```
 
+### Nested Object
+Any object type property which contains `id` property
+will be treat specially.
+When sending request, properties other than `id` will be removed,
+for the convenience to work well with [Vapor](https://vapor.codes).
+
+For example,
+```
+Group:
+  type: "object"
+  properties:
+    id:
+      type: "integer"
+      format: "int32"
+    name:
+      type: "string"
+    note:
+      type: "string"
+Person:
+  type: "object"
+  properties:
+    id:
+      type: "integer"
+      format: "int32"
+    group:
+      $ref: "#/components/schemas/Group"
+    fullName:
+      type: "object"
+      properties:
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+    age:
+      type: "integer"
+      format: "int32"
+```
+will become
+```
+interface Group {
+  id: number;
+  name: string;
+  note: string;
+}
+interface Person {
+  id: number;
+  group: Group;
+  name: {
+    firstName: string;
+    lastName: string;
+  };
+  value: number;
+}
+```
+
+However, in http-request function in ClientAPI,
+the type of the parameter will become
+```
+interface Group {
+  id: number;
+  name: string;
+  note: string;
+} // no change
+interface Task {
+  id: number;
+  group: {
+    id: number;
+  }; // properties other than `id` is removed
+  name: {
+    firstName: string;
+    lastName: string;
+  }; // no change because there is no `id` property
+  value: number;
+}
+```
+
 ## Limitations
 ### application/json only
 This tool only supports `application/json` type for request and response body. Any other type like `multipart/form` or `image/*` are **not supported** and will be ignored.
 
-### schema $ref only
-Other $ref like requestBody, responseBody are not supported currently.
-
 ## Versions
+#### 2.0.6
+- Change Full#advance and implement Full#advanced
+- Nest [object-type properties with id property] conversion in request function
 #### 2.0.5
-- implement \$ref support for responses, parameters, requestBody
+- Implement \$ref support for responses, parameters, requestBody
 #### 2.0.4
-- fix FullDate stringify in Axios params
-- use local timezone instead of UTC in FullDate
+- Fix FullDate stringify in Axios params
+- Use local timezone instead of UTC in FullDate
 #### 2.0.3
-- implement `required` property of schema
+- Implement `required` property of schema
 - client-only codegen
 #### 2.0.2
-- make number convertible to boolean
+- Make number convertible to boolean
 #### 2.0.1
-- use IState as a generic type and remove it from api-codegen.
+- Use IState as a generic type and remove it from api-codegen.
 #### 2.0.0
-- simplify generated code
-  - merge all APIPromise class
-  - remove IServerAPI and IClientAPI
-- remove res Object, return [status, body] in ServerAPI instead
-- remove schema classes, use interface instead
+- Simplify generated code
+  - Merge all APIPromise class
+  - Remove IServerAPI and IClientAPI
+- Remove res Object, return [status, body] in ServerAPI instead
+- Remove schema classes, use interface instead
 - `-s` flag for `ctx.state` interface path
 #### 1.1.3
-- expose fields of schemas to XXX.fields(static variable)
+- Expose fields of schemas to XXX.fields(static variable)
 #### 1.1.2
-- publish to npmjs and change the package name in generated code
-- specify constructor argument type of FullDate
+- Publish to npmjs and change the package name in generated code
+- Specify constructor argument type of FullDate
 #### 1.1.1
-- implement FullDate#distanceFrom(d0)
-- fix FullDate timezone bug, use UTC instead
+- Implement FullDate#distanceFrom(d0)
+- Fix FullDate timezone bug, use UTC instead
 #### 1.1.0
-- fix Partial constructor, enhance error msg
-- add int32 STP
+- Fix Partial constructor, enhance error msg
+- Add int32 STP
 #### 1.0.1
 - implement FullDate getter, setter, function(advance)
 #### 1.0.0

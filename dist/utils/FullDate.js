@@ -88,6 +88,10 @@ var FullDate = /** @class */ (function () {
     });
     // func
     FullDate.prototype.advance = function (period) {
+        this._date = new Date(this._date.valueOf() + period * 86400e3);
+        return this;
+    };
+    FullDate.prototype.advanced = function (period) {
         return new FullDate(this._date.valueOf() + period * 86400e3);
     };
     FullDate.prototype.distanceFrom = function (d0) {
