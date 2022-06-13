@@ -1,4 +1,4 @@
-import {AxiosResponse} from 'axios';
+import {AxiosPromise, AxiosResponse} from 'axios';
 
 type ValueOf<T> = T[keyof T];
 type RHandler<T> = ValueOf<{[K in keyof T]:
@@ -11,7 +11,7 @@ function typeGuard<T extends U, U=any>(checker: (x: U) => boolean) {
 }
 
 export class BadResponseError extends Error {
-  constructor(public res: AxiosResponse<any>, label: string) {
+  constructor(public res: AxiosResponse, label: string) {
     super(`${label} status code: ${res.status}\ndata: ${
       typeof res.data === 'object' ? JSON.stringify(res.data) : res.data}`);
     Object.setPrototypeOf(this, BadResponseError.prototype);
@@ -27,7 +27,7 @@ export class APIPromise<
   private promise: Promise<RHandler<THdl>>;
 
   constructor(
-    resPromise: Promise<AxiosResponse>,
+    resPromise: AxiosPromise,
     stps: {[K in keyof TRes]: (data: any) => TRes[K]},
     private handlers: THdl,
   ) {
@@ -48,7 +48,7 @@ export class APIPromise<
   }
 
   static init<TRes, KRsv extends keyof TRes>(
-    res: Promise<AxiosResponse>,
+    res: AxiosPromise,
     stps: {[K in keyof TRes]: (data: any) => TRes[K]},
     kRsvs: KRsv[],
   ): APIPromise<
