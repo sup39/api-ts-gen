@@ -42,7 +42,7 @@ function codegenIHandler(funcs: APIFuncs, config: Config, cp: CodePrinter) {
     if (body != null) {
       // PATCH's req body: Partial
       let {typeName} = body;
-      if (method == 'patch') typeName = `Partial<${typeName}>`;
+      if (method === 'patch') typeName = `Partial<${typeName}>`;
       cp.writeln(`body${body.required ? '' : '?'}: ${typeName};`);
     }
     cp.writeln('}', -1); // req END
@@ -89,6 +89,11 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   // router
   cp.writeln(`type CTX = Router.RouterContext<IState>;`);
   cp.writeln(`\nconst router = new Router<IState>();`);
+  // STP
+  cp.writeln(`router.use((ctx, next) => next().catch(err => {
+  if (err instanceof STP.BadValueError) return ctx.throw(400, err.toString());
+  throw err;
+}))`);
   // function
   const gcGetParams = {
     path: (attr: string) => `ctx.params['${attr}']`,
@@ -115,9 +120,7 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
     if (Object.keys(reqTypes).length === 0) {
       cp.writeln('const req = {};');
     } else {
-      cp.writeln('let req;');
-      cp.writeln('try {', 1);
-      cp.writeln('req = {', 1);
+      cp.writeln('const req = {', 1);
       // paras
       for (const _in of ELParameterIn) {
         const paras = reqTypes[_in];
@@ -136,12 +139,8 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
         cp.writeln(
           `body: ${body.stp('ctx.request.body', 'req.body', isPartial)}`);
       }
-      cp.writeln('}', -1);
-      cp.writeln('} catch(err) {', -1); cp.tab(1);
-      cp.writeln('if (err instanceof STP.BadValueError)', 1);
-      cp.writeln('return ctx.throw(400, err.toString());'); cp.tab(-1);
-      cp.writeln('throw err;');
-      cp.writeln('}', -1);
+      // req END
+      cp.writeln('};', -1);
     }
     // call
     cp.writeln(`const r = await api.${funcName}(req, ctx.state, ctx);`);

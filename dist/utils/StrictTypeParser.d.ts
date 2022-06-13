@@ -19,6 +19,7 @@ export declare module StrictTypeParser {
     function _byte(x: any, label: string): string;
     function _binary(x: any, label: string): string;
     function _Array<T>(x: any, label: string, mapper: (x: any) => T): Array<T>;
+    function undefinedCheck(val: any, label: string): void;
     function parse<T>(stp: (val: any, label: string) => T, val: any, label: string): T;
     function nullableParse<T>(stp: (val: any, label: string) => T, val: any, label: string): T | null;
     const supportTypes: string[];

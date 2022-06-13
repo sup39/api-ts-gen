@@ -10,6 +10,5 @@
     "outDir": "dist",
     "rootDir": "lib",
     "strict": true
-  },
-  "include": ["lib"]
+  }
 }

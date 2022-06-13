@@ -3,16 +3,19 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.APIPromise = exports.BadResponseError = void 0;
 function typeGuard(checker) {
     return function (x) {
         return checker(x);
@@ -21,7 +24,7 @@ function typeGuard(checker) {
 var BadResponseError = /** @class */ (function (_super) {
     __extends(BadResponseError, _super);
     function BadResponseError(res, label) {
-        var _this = _super.call(this, label + " status code: " + res.status + "\ndata: " + (typeof res.data === 'object' ? JSON.stringify(res.data) : res.data)) || this;
+        var _this = _super.call(this, "".concat(label, " status code: ").concat(res.status, "\ndata: ").concat(typeof res.data === 'object' ? JSON.stringify(res.data) : res.data)) || this;
         _this.res = res;
         Object.setPrototypeOf(_this, BadResponseError.prototype);
         return _this;

@@ -40,7 +40,7 @@ export module StrictTypeParser {
   }
   export function _boolean(x: any, label: string): boolean {
     if (typeof x === 'boolean') return x;
-    if (typeof x === 'number') return x!=0;
+    if (typeof x === 'number') return x!==0;
     if (x==='true') return true;
     if (x==='false') return false;
     throw new BadTypeError(label, 'boolean', x);
@@ -72,7 +72,7 @@ export module StrictTypeParser {
     throw new BadTypeError(label, 'Array', x);
   }
 
-  function undefinedCheck(val: any, label: string) {
+  export function undefinedCheck(val: any, label: string) {
     if (val === undefined) {
       throw new BadValueError(label,
         `${label} is required, but got undefined`);

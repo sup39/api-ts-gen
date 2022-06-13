@@ -5,7 +5,7 @@ interface WriteStream {
 }
 
 export class StringStream implements WriteStream {
-  private content = ''
+  private content = '';
   write(s: string) {
     this.content += s;
   }

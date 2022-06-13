@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CodePrinter = exports.StringStream = void 0;
 var StringStream = /** @class */ (function () {
     function StringStream() {
         this.content = '';
@@ -29,7 +30,7 @@ var CodePrinter = /** @class */ (function () {
         if (pretab === void 0) { pretab = dIndent < 0; }
         if (pretab)
             this.cIndent = Math.max(0, this.cIndent + dIndent);
-        this.write(this.indentString.repeat(this.cIndent) + s + "\n");
+        this.write("".concat(this.indentString.repeat(this.cIndent) + s, "\n"));
         if (!pretab)
             this.cIndent = Math.max(0, this.cIndent + dIndent);
     };

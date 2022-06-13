@@ -12,8 +12,8 @@ export class FullDate {
   constructor(y: number, m: number, d?: number);
   constructor(...argv: [any?, number?, number?]) {
     this._date = removeTime((() => {
-      if (argv.length == 0) return new Date();
-      if (argv.length == 1) {
+      if (argv.length === 0) return new Date();
+      if (argv.length === 1) {
         const arg = argv[0];
         if (arg instanceof FullDate) return new Date(+arg);
         if (arg instanceof Date) return arg;

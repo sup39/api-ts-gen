@@ -608,6 +608,9 @@ interface Task {
 This tool only supports `application/json` type for request and response body. Any other type like `multipart/form` or `image/*` are **not supported** and will be ignored.
 
 ## Versions
+#### 2.1.0
+- Move `@sup39/api-ts-gen/utils` to `@sup39/api-ts-gen/dist/utils` since symlink is no longer allowed
+- Simplify `apiRouter.ts` by using `router.use` to check for `BadValueError`
 #### 2.0.6
 - Change Full#advance and implement Full#advanced
 - Nest [object-type properties with id property] conversion in request function

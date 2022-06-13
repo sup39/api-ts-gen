@@ -1,33 +1,20 @@
 module.exports = {
-  'env': {
+  env: {
     'es6': true,
-    'node': true
+    'node': true,
   },
-  'extends': [
-    'google'
+  extends: [
+    '@sup39/eslint-config-typescript',
   ],
-  'globals': {
+  globals: {
     'Atomics': 'readonly',
-    'SharedArrayBuffer': 'readonly'
+    'SharedArrayBuffer': 'readonly',
   },
-  'parser': '@typescript-eslint/parser',
-  'parserOptions': {
+  parserOptions: {
     'ecmaVersion': 2018,
-    'sourceType': 'module'
+    'sourceType': 'module',
   },
-  'plugins': [
-    '@typescript-eslint'
-  ],
-  'rules': {
-    'require-jsdoc': 'off',
-    'arrow-parens': ['error', 'as-needed'],
-    'indent': ['error', 2, {'MemberExpression': 1}],
-    // no-unused-vars except ts interface
-    'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', {
-      'vars': 'all',
-      'args': 'after-used',
-      'ignoreRestSiblings': false
-    }],
+  rules: {
+    'no-prototype-builtins': 'off',
   },
 };

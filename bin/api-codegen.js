@@ -65,9 +65,9 @@ function parseArgv(argv) {
 
   for (const arg of argv) {
     if (arg.startsWith('-')) {
-      if (arg.length == 1) {
+      if (arg.length === 1) {
         return badArgv(`Unexpected token: -`);
-      } else if (arg[1] == '-') {
+      } else if (arg[1] === '-') {
         // flag name
         setFlag(arg.substring(2));
       } else {

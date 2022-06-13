@@ -24,7 +24,7 @@ export class APIPromise<
   THdl extends {[K in KRsv]: (data: TRes[K]) => any},
   KOn extends keyof TRes = keyof TRes,
 > implements PromiseLike<RHandler<THdl>> {
-  private promise: Promise<RHandler<THdl>>
+  private promise: Promise<RHandler<THdl>>;
 
   constructor(
     resPromise: Promise<AxiosResponse>,

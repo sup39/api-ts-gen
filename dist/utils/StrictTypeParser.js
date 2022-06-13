@@ -3,16 +3,19 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.StrictTypeParser = void 0;
 var FullDate_1 = require("./FullDate");
 var StrictTypeParser;
 (function (StrictTypeParser) {
@@ -31,8 +34,8 @@ var StrictTypeParser;
     var BadTypeError = /** @class */ (function (_super) {
         __extends(BadTypeError, _super);
         function BadTypeError(label, type, value) {
-            var _this = _super.call(this, label, label + ": Can not convert `" + (['object', 'array'].includes(typeof value) ?
-                JSON.stringify(value) : "" + value) + "` to type " + type) || this;
+            var _this = _super.call(this, label, "".concat(label, ": Can not convert `").concat(['object', 'array'].includes(typeof value) ?
+                JSON.stringify(value) : "".concat(value), "` to type ").concat(type)) || this;
             _this.label = label;
             _this.type = type;
             _this.value = value;
@@ -75,7 +78,7 @@ var StrictTypeParser;
         if (typeof x === 'boolean')
             return x;
         if (typeof x === 'number')
-            return x != 0;
+            return x !== 0;
         if (x === 'true')
             return true;
         if (x === 'false')
@@ -123,14 +126,15 @@ var StrictTypeParser;
     StrictTypeParser._Array = _Array;
     function undefinedCheck(val, label) {
         if (val === undefined) {
-            throw new BadValueError(label, label + " is required, but got undefined");
+            throw new BadValueError(label, "".concat(label, " is required, but got undefined"));
         }
     }
+    StrictTypeParser.undefinedCheck = undefinedCheck;
     function parse(stp, val, label) {
         // body
         undefinedCheck(val, label);
         if (val === null) {
-            throw new BadValueError(label, label + " is not nullable, but got null");
+            throw new BadValueError(label, "".concat(label, " is not nullable, but got null"));
         }
         return stp(val, label);
     }

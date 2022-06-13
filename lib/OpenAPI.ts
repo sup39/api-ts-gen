@@ -257,7 +257,7 @@ export class SchemaType {
       } else if (type === 'integer') {
         if (format === 'int32') t = 'int32';
         else {
-          if (format && format != 'int64') {
+          if (format && format !== 'int64') {
             warn(`Unsupport integer format ${format}, use number instead`);
           }
           t = 'number'; // TODO int64

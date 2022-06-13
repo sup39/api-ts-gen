@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.apiFunctionsOf = exports.SchemaType = exports.resolveRef = exports.isObjectSchema = exports.isArraySchema = exports.ELParameterIn = void 0;
 var StrictTypeParser_1 = require("./utils/StrictTypeParser");
 var warn = function (x) { return console.warn('\x1b[1;33mWarning: ' + x + '\x1b[0m'); };
 var ELMethod = ['get', 'put', 'post', 'delete', 'patch'];
@@ -38,13 +39,13 @@ function resolveRef(obj, dict, prefix) {
             var name_1 = ref.substring(prefix.length + 1); // $prefix/
             var obj0 = dict === null || dict === void 0 ? void 0 : dict[name_1];
             if (obj0 === undefined) {
-                console.error("ref not found: " + ref);
+                console.error("ref not found: ".concat(ref));
                 return;
             }
             obj = obj0;
         }
         else {
-            console.error("Invalid ref: " + ref + ", expect prefix " + prefix);
+            console.error("Invalid ref: ".concat(ref, ", expect prefix ").concat(prefix));
             return;
         }
     } while (true);
@@ -73,31 +74,31 @@ var SchemaType = /** @class */ (function () {
             var _a;
             return (_a = this._typeName) !== null && _a !== void 0 ? _a : (this._typeName = SchemaType.typeNameOf(this.schema, this._sameFile));
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(SchemaType.prototype, "required", {
         get: function () {
             return this._required;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(SchemaType.prototype, "maxSize", {
         get: function () {
             return this.schema.maxSize;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     SchemaType.prototype.forProp = function (prop) {
-        return "" + prop + (this.required ? '' : '?') + ": " + this.typeName;
+        return "".concat(prop).concat(this.required ? '' : '?', ": ").concat(this.typeName);
     };
     SchemaType.prototype.stp = function (prop, label, partial, sameFile) {
         if (partial === void 0) { partial = false; }
         if (sameFile === void 0) { sameFile = false; }
         var stp = SchemaType.gcStp(prop, this.schema, label, partial, sameFile);
-        return (this.required ? '' : prop + "===void 0 ? void 0 : ") + stp;
+        return (this.required ? '' : "".concat(prop, "===void 0 ? void 0 : ")) + stp;
     };
     SchemaType.typeNameOf = function (schema, sameFile) {
         var _a;
@@ -105,21 +106,21 @@ var SchemaType = /** @class */ (function () {
             var $ref = schema.$ref;
             var typeName = (_a = /^#\/components\/schemas\/(\w+)$/g.exec($ref)) === null || _a === void 0 ? void 0 : _a[1];
             if (typeName == null) {
-                warn("Invalid $ref, use any instead: " + $ref);
+                warn("Invalid $ref, use any instead: ".concat($ref));
                 return 'any';
             }
-            return sameFile ? typeName : "Schemas." + typeName;
+            return sameFile ? typeName : "Schemas.".concat(typeName);
         }
         var type = schema.type, format = schema.format, nullable = schema.nullable, readOnly = schema.readOnly;
         var sType = type;
         if (isArraySchema(schema)) {
-            sType = "Array<" + SchemaType.typeNameOf(schema.items, sameFile) + ">";
+            sType = "Array<".concat(SchemaType.typeNameOf(schema.items, sameFile), ">");
         }
         else if (isObjectSchema(schema)) {
             sType = '{';
             for (var _i = 0, _b = Object.entries(schema.properties); _i < _b.length; _i++) {
                 var _c = _b[_i], name_2 = _c[0], sub = _c[1];
-                sType += name_2 + ": " + SchemaType.typeNameOf(sub, sameFile) + ", ";
+                sType += "".concat(name_2, ": ").concat(SchemaType.typeNameOf(sub, sameFile), ", ");
             }
             sType += '}';
         }
@@ -133,14 +134,14 @@ var SchemaType = /** @class */ (function () {
             else if (format === 'binary')
                 sType = 'string'; // TODO Buffer
             else if (format)
-                warn("Unknown format " + format + ", use string instead");
+                warn("Unknown format ".concat(format, ", use string instead"));
         }
         else if (type === 'integer')
             sType = 'number'; // TODO integer
         if (nullable)
-            sType = sType + " | null";
+            sType = "".concat(sType, " | null");
         if (readOnly)
-            sType = "Readonly<" + sType + ">";
+            sType = "Readonly<".concat(sType, ">");
         return sType;
     };
     SchemaType.gcStp = function (para, schema, label, partial, sameFile) {
@@ -148,7 +149,7 @@ var SchemaType = /** @class */ (function () {
         // object
         if (isReference(schema)) {
             var typeName = new SchemaType(schema, true, sameFile).typeName;
-            return typeName + "." + (partial ? 'Partial' : 'from') + "(" + para + ")";
+            return "".concat(typeName, ".").concat(partial ? 'Partial' : 'from', "(").concat(para, ")");
         }
         // any
         var type = schema.type, nullable = schema.nullable, format = schema.format;
@@ -156,13 +157,13 @@ var SchemaType = /** @class */ (function () {
         if (type === 'any')
             return para;
         if (isArraySchema(schema)) {
-            sStp = "(v, l)=>STP._Array(v, l, elm=>" + SchemaType.gcStp('elm', schema.items, label + "[]", false, sameFile) + ")";
+            sStp = "(v, l)=>STP._Array(v, l, elm=>".concat(SchemaType.gcStp('elm', schema.items, "".concat(label, "[]"), false, sameFile), ")");
         }
         else if (isObjectSchema(schema)) {
             sStp = '()=>({';
             for (var _i = 0, _a = Object.entries(schema.properties); _i < _a.length; _i++) {
                 var _b = _a[_i], name_3 = _b[0], sub = _b[1];
-                sStp += name_3 + ": " + SchemaType.gcStp(para + '.' + name_3, sub, label + '.' + name_3, false, sameFile) + ", ";
+                sStp += "".concat(name_3, ": ").concat(SchemaType.gcStp(para + '.' + name_3, sub, label + '.' + name_3, false, sameFile), ", ");
             }
             sStp += '})';
         }
@@ -179,7 +180,7 @@ var SchemaType = /** @class */ (function () {
                     t = 'binary';
                 else {
                     if (format) {
-                        warn("Unknown string format " + format + ", use string instead");
+                        warn("Unknown string format ".concat(format, ", use string instead"));
                     }
                     t = 'string';
                 }
@@ -188,8 +189,8 @@ var SchemaType = /** @class */ (function () {
                 if (format === 'int32')
                     t = 'int32';
                 else {
-                    if (format && format != 'int64') {
-                        warn("Unsupport integer format " + format + ", use number instead");
+                    if (format && format !== 'int64') {
+                        warn("Unsupport integer format ".concat(format, ", use number instead"));
                     }
                     t = 'number'; // TODO int64
                 }
@@ -197,16 +198,16 @@ var SchemaType = /** @class */ (function () {
             else
                 t = type;
             if (!StrictTypeParser_1.StrictTypeParser.supportTypes.includes(t)) {
-                warn("Unsupport type " + type + " " + format + ", use any instead");
+                warn("Unsupport type ".concat(type, " ").concat(format, ", use any instead"));
                 return para;
             }
-            sStp = "STP._" + t;
+            sStp = "STP._".concat(t);
         }
         // nullable
         var funcName = nullable ? 'nullableParse' : 'parse';
         // result
-        var sLabel = "'" + label.replace(/'/g, '\\\'') + "'"; // escape
-        return "STP." + funcName + "(" + sStp + ", " + para + ", " + sLabel + ")";
+        var sLabel = "'".concat(label.replace(/'/g, '\\\''), "'"); // escape
+        return "STP.".concat(funcName, "(").concat(sStp, ", ").concat(para, ", ").concat(sLabel, ")");
     };
     return SchemaType;
 }());
@@ -225,7 +226,7 @@ function apiFunctionsOf(openAPI) {
             // operationId
             var operationId = op.operationId, parameters = op.parameters, requestBody = op.requestBody, responses = op.responses;
             if (operationId == null) {
-                warn("ignore operation in " + method + " " + url + ": " +
+                warn("ignore operation in ".concat(method, " ").concat(url, ": ") +
                     'operationId should be given');
                 continue;
             }
