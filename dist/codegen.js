@@ -166,7 +166,7 @@ function codegenClientAPI(funcs, config, cp) {
     // axios
     cp.writeln('const $http = axios.create({', 1);
     cp.writeln('validateStatus: () => true,');
-    cp.writeln('paramsSerializer: params => qStringify(params),');
+    cp.writeln("paramsSerializer: params => qStringify(params, {arrayFormat: 'repeat'}),");
     cp.writeln('});', -1);
     // function
     cp.writeln('\nfunction urlReplacer(url: string, ' +
