@@ -1,6 +1,7 @@
 import {FullDate} from './FullDate';
 
 export module StrictTypeParser {
+  const toStringDefault = {}.toString;
   export class BadValueError extends Error {
     constructor(public label: string, message: string) {
       super(message);
@@ -35,7 +36,11 @@ export module StrictTypeParser {
   }
   export function _string(x: any, label: string): string {
     if (typeof x === 'string') return x;
-    if (typeof x === 'object') return x.toString();
+    if (typeof x === 'object') {
+      return x.toString === toStringDefault ?
+        JSON.stringify(x) : // pure object => JSON
+        x.toString();
+    }
     throw new BadTypeError(label, 'string', x);
   }
   export function _boolean(x: any, label: string): boolean {

@@ -19,6 +19,7 @@ exports.StrictTypeParser = void 0;
 var FullDate_1 = require("./FullDate");
 var StrictTypeParser;
 (function (StrictTypeParser) {
+    var toStringDefault = {}.toString;
     var BadValueError = /** @class */ (function (_super) {
         __extends(BadValueError, _super);
         function BadValueError(label, message) {
@@ -69,8 +70,11 @@ var StrictTypeParser;
     function _string(x, label) {
         if (typeof x === 'string')
             return x;
-        if (typeof x === 'object')
-            return x.toString();
+        if (typeof x === 'object') {
+            return x.toString === toStringDefault ?
+                JSON.stringify(x) : // pure object => JSON
+                x.toString();
+        }
         throw new BadTypeError(label, 'string', x);
     }
     StrictTypeParser._string = _string;

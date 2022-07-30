@@ -608,6 +608,8 @@ interface Task {
 This tool only supports `application/json` type for request and response body. Any other type like `multipart/form` or `image/*` are **not supported** and will be ignored.
 
 ## Versions
+#### 2.1.3
+- Use `JSON.stringify()` for pure object in `STP._string`
 #### 2.1.2
 - Fix axios query of array type in IClientAPI (add `{arrayFormat: 'repeat'}`)
 #### 2.1.1
