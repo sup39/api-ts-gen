@@ -79,10 +79,10 @@ function codegenRouter(funcs: APIFuncs, config: Config, cp: CodePrinter) {
   // import
   cp.writeln(`import * as Schemas from './${schemasName}'`);
   cp.writeln(`import {IServerAPI} from './${IHandlerName}'`);
-  cp.writeln(`import * as Router from '@koa/router'`);
+  cp.writeln(`import Router from '@koa/router'`);
   cp.writeln(
     `import {FullDate, StrictTypeParser as STP} from '${utilsTSPath}'`);
-  cp.writeln(`import * as bodyParser from 'koa-body'`);
+  cp.writeln(`import bodyParser from 'koa-body'`);
   // api
   cp.writeln(`\nimport api from '${ServerAPITSPath}'`);
   cp.writeln(`type IState = typeof api extends IServerAPI<infer T> ? T : any;`);
